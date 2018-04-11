@@ -1,0 +1,5 @@
+
+cd C:\Users\howla_000\Desktop\checkerProj
+
+python EchoClientServer_Thread.py -r server
+python EchoClientServer_Thread.py -r client
