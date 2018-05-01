@@ -9,6 +9,9 @@ import threading
 import time
 import queue
 import tkinter as tk
+from tkinter import messagebox
+import os
+from itertools import count
 
 # By Moshiur Howlader
 # Use the standard echo client.
@@ -24,21 +27,23 @@ class Server_Gui:
         self.queue = queue
         self.master = master
         self.endCommand = endCommand
-        self.labe1_text1 = tk.StringVar()
+        self.label_text1 = tk.StringVar()
         self.label_text1Count = 0
-
+        self.label_text2 = tk.StringVar()
+        self.label_text3 = tk.StringVar()
+        self.gameTime = 0
         # Set up the GUI
         #self.myFrame = tk.Frame(master)
         self.init_board_GUI()
-        self.disp_info_GUI()
-        self.disp_menubar_GUI()
+        self.init_info_GUI()
+        self.one_sec_counter(self.TIMER_Label)
         # self.doneButton = tk.Button(master, text='Done', command=endCommand)
         # self.doneButton.pack()
         # self.testButton = tk.Button(master, text='Hello', command=self.printHello)
         # self.testButton.pack()
-        # self.testIOdata = tk.Label(master, textvariable = self.labe1_text1)
+        # self.testIOdata = tk.Label(master, textvariable = self.label_text1)
         # self.testIOdata.pack()
-        #self.labe1_text1.set("Hello Idiot")
+        #self.label_text1.set("Hello Idiot")
         # Add more GUI stuff here depending on your specific needs
     def init_board_GUI(self):
         print("Placeholder")
@@ -59,7 +64,7 @@ class Server_Gui:
         self.game_on()
         
     def draw_board(self):
-        self.canvas.delete("square")
+        #self.canvas.delete("square")
         color = self.color2
         for row in range(self.rows):
             color = self.color1 if color == self.color2 else self.color2
@@ -135,6 +140,7 @@ class Server_Gui:
         oldCoordY = 5
         Server.numCaptured = Server.numCaptured + 1
         self.canvas.gettags(name)
+        
     def movepiece(self, name, destRow, destCol): 
         #remove and place aka move piece
         
@@ -211,12 +217,16 @@ class Server_Gui:
             #use self.old_x_coord and self.old_y_coord
             #to determine piece name
             #self.movepiece(name, destRow, destCol)
+            my_old_index = self.compute_indices(self.old_x_coord, self.old_y_coord) 
             my_index = self.compute_indices(event.x, event.y)
             #validate the red piece movement here
-            self.movepiece(self.old_O_piece_clicked, my_index[0], my_index[1])
-            self.disp_info_GUI()
-            self.disp_menubar_GUI()
-            #Server.numCaptured = Server.numCaptured + 1
+            if((my_index[0] == my_old_index[0] - 1) or (my_index[0] == my_old_index[0] + 1)):
+                if((my_index[1] == my_old_index[1] + 1)):
+                    self.movepiece(self.old_O_piece_clicked, my_index[0], my_index[1])
+                    self.update_info_GUI()
+                    #Server.numCaptured = Server.numCaptured + 1
+                    Server.turn_count = Server.turn_count + 1
+                    print("Turn counter should be: " + str(Server.turn_count))
             return
         # elif(Server.turn%2 == 1):
             # #redraw GUI based on info from client
@@ -378,27 +388,61 @@ class Server_Gui:
                 return (7,6)
             else:               
                 return (7,7)
+    def init_info_GUI(self):
+        #instantiate the components 
+        self.label_text1 = "Timer: " + str(self.gameTime)
+        self.label_text2 = "Turn Counter: " + str(Server.turn_count)
+        self.label_text3 = "Num Pieces Captured: " + str(Server.numCaptured)
 
-    def disp_info_GUI(self):
-        print("disp_info_GUI Placeholder")
-        self.doneButton = tk.Button(self.canvas, text='Done', command=self.endCommand)
-        self.doneButton.grid(padx = 450, pady = 50)#(side=tk.RIGHT)
+        self.GUI_Button1 = tk.Button(self.canvas, text='Rules', command=self.printRules)
+        self.GUI_Button1.grid(padx = 450, pady = 0, row = 1, column = 1)
+        self.TIMER_Label = tk.Label(self.canvas, text=self.label_text1)
+        self.TIMER_Label.grid(padx = 0, row = 2, column = 1)
+        self.GUI_Label2 = tk.Label(self.canvas, text=self.label_text2)
+        self.GUI_Label2.grid(padx = 0, row = 3, column = 1)
+        self.GUI_Label3 = tk.Label(self.canvas, text=self.label_text3)
+        self.GUI_Label3.grid(padx = 0, row = 4, column = 1)
+
+        self.GUI_Button = tk.Button(self.canvas, text='Exit', command=self.endCommand)
+        self.GUI_Button.grid(padx = 0, row = 10, column = 1)#(side=tk.RIGHT)
+        
         # self.testButton = tk.Button(self.master, text='Hello', command=self.printHello)
         # self.testButton.pack()
-        # self.testIOdata = tk.Label(self.master, textvariable = self.labe1_text1)
+        # self.testIOdata = tk.Label(self.master, textvariable = self.label_text1)
         # self.testIOdata.pack()
-        # self.labe1_text1.set("Hello Idiot")
-    def disp_menubar_GUI(self):
-        print("disp_menubar_GUI Placeholder") 
+        # self.label_text1.set("Hello Idiot")
+        
+    def update_info_GUI(self):
+        self.label_text2 = "Turn Counter: " + str(Server.turn_count)
+        self.label_text3 = "Num Pieces Captured: " + str(Server.numCaptured)
+        print("disp_info_GUI Placeholder")
+        
+        self.GUI_Label2.config(text = self.label_text2)
+        self.GUI_Label3.config(text = self.label_text3)
+
+
     def printHello(self):
         self.label_text1Count+=1
         print("Hello World!")
         if(self.label_text1Count%2 == 1):
-            self.labe1_text1.set("Test")
+            self.label_text1.set("Test")
         else:
-            self.labe1_text1.set("Not Test")
+            self.label_text1.set("Not Test")
             
         print("Set new text")
+    
+    def printRules(self):
+        messagebox.showinfo("Rules", "Move your checker pieces diagonally\n and capture their pieces!")
+        os.startfile('images\Rules.png')
+        
+    def one_sec_counter(self, label):
+        counter = count(0)
+        def update_func():
+            label.config(text="Timer: " + str(next(counter)) + " sec")
+            label.after(1100, update_func) #after 1 sec or 1000 ms
+            #this uses recursion
+        update_func()
+        
         
     def processIncoming(self):
         """Handle all messages currently in the queue, if any."""
@@ -409,7 +453,7 @@ class Server_Gui:
                 # simple test, print it (in real life, you would
                 # suitably update the GUI's display in a richer fashion).
                 print("Printing my message", msg)
-                self.labe1_text1.set(msg)
+                self.label_text1.set(msg)
             except queue.Empty:
                 # just on general principles, although we don't
                 # expect this branch to be taken in this case
@@ -435,7 +479,7 @@ class Server:
         Server.checkerboard = [[], [], [], [], [], [], [], []] #{} we want class variable not instance variable! Can define above
         Server.numCaptured = 0
         Server.numRemaining = 12
-        self.turn_count = 1
+        Server.turn_count = 1
         self.init_board()
         self.setup_Gui()
         
@@ -599,11 +643,7 @@ class Server:
         self.running = 0
         sys.exit(0)
     
-    def one_sec_counter(self):
-        self.gameTime = 0
-        while True:
-            self.gameTime = self.gameTime + 1
-            time.sleep(1)
+
 
             
 ########################################################################
@@ -612,18 +652,16 @@ class Server:
 class Client_Gui:
     def __init__(self, master, queue, endCommand):
         self.queue = queue
-        self.labe1_text1 = tk.StringVar()
+        self.master = master
+        self.endCommand = endCommand
+        self.label_text1 = tk.StringVar()
+        self.label_text2 = tk.StringVar()
+        self.label_text3 = tk.StringVar()
+        self.gameTime = 0
         # Set up the GUI
         self.init_board_GUI()
         self.init_info_GUI()
-        self.init_menubar_GUI()
-        # doneButton = tk.Button(master, text='Done', command=endCommand)
-        # doneButton.pack()
-        # testButton = tk.Button(master, text='Hello', command=self.printHello)
-        # testButton.pack()
-        # self.testIOdata = tk.Label(master, textvariable = self.labe1_text1)
-        # self.testIOdata.pack()
-        # Add more GUI stuff here depending on your specific needs
+        self.one_sec_counter(self.TIMER_Label)
         
     def init_board_GUI(self):
         print("Placeholder")
@@ -641,6 +679,7 @@ class Client_Gui:
         self.canvas.pack(side="top", fill="both", expand=True, padx=2, pady=2)
         self.draw_board()
         self.populate_pieces()
+        self.game_on()
         
     def draw_board(self):
         color = self.color2
@@ -655,15 +694,341 @@ class Client_Gui:
                 color = self.color1 if color == self.color2 else self.color2
                 
     def populate_pieces(self):
+        #Tkinter compatible data (gif)
+        blackking = tk.PhotoImage(file="blackking.gif")
+        blackpiece = tk.PhotoImage(file="blackpiece.gif")
+        redking = tk.PhotoImage(file="redking.gif")
+        redpiece = tk.PhotoImage(file="redpiece.gif")
+        #initial population of all the pieces for server side
+        init_coordArrayX = {(5,0),(5,2),(5,4),(5,6), 
+                        (6,1), (6,3), (6,5), (6,7),
+                        (7,0),(7,2),(7,4),(7,6)}
+        init_coordArrayO = {(0,1),(0,3),(0,5),(0,7), 
+                        (1,0), (1,2), (1,4), (1,6),
+                        (2,1),(2,3),(2,5),(2,7)}
+        pieceCounter = 1
+        
+        for row in range(8):
+            for col in range(8):
+                if (row,col) in init_coordArrayX:
+                    xCoord = (col * self.size) + int(self.size/2)
+                    yCoord = (row * self.size) + int(self.size/2)
+                    self.canvas.create_image(xCoord,yCoord,image=blackpiece, tags=("piece"+str(pieceCounter), "blackpiecetag"),anchor="c")
+                    pieceCounter = pieceCounter + 1
+                elif (row,col) in init_coordArrayO:
+                    xCoord = (col * self.size) + int(self.size/2)
+                    yCoord = (row * self.size) + int(self.size/2)
+                    self.canvas.create_image(xCoord,yCoord, image=redpiece, tags=("piece"+str(pieceCounter), "redpiecetag"),anchor="c")
+                    pieceCounter = pieceCounter + 1
+        self.placepiece(blackpiece, 0, 0)
+        self.placepiece(redpiece, 0, 0)
+
+    def placepiece(self, name, row, column): #this does not do what you think it does, magically makes everything appear
+        '''Place a piece at the given row/column'''
+        self.pieces[name] = (row, column) #dictionary to place the pieces
+        x0 = (column * self.size) + int(self.size/2)
+        y0 = (row * self.size) + int(self.size/2)
+        self.canvas.coords(name, x0, y0)
+        print("coordinates x0 and y0: ", x0, y0)       
+
+    def removepiece(self, name):
+        #just remove from board
         print("Placeholder")
+        oldCoordX = 5
+        oldCoordY = 5
+        Client.numCaptured = Client.numCaptured + 1
+        self.canvas.gettags(name)
+
+    def movepiece(self, name, destRow, destCol): 
+        #remove and place aka move piece
+        
+        # blackpiece = tk.PhotoImage(file="blackpiece.gif")
+        # self.canvas.delete(name)
+        # self.canvas.create_image(300,300, image=blackpiece, tags=("piece2", "blackpiecetag"),anchor="c")
+        # self.placepiece(blackpiece, 0, 0)
+        
+        #GUI Portion of movepiece (frontend)
+        #Store data
+        myList = self.canvas.gettags(name)
+        #find current location in the board
+        for sublist in Client.coordArrayX:
+            if(sublist[0]==name):
+                oldCoordX = sublist[1]
+                oldCoordY = sublist[2]
+        for sublist in Client.coordArrayO:
+            if(sublist[0]==name):
+                oldCoordX = sublist[1]
+                oldCoordY = sublist[2]
+        print(oldCoordX)
+        print(oldCoordY)
+        image_name = myList[1][0:-3]
+        print("image_name is", image_name)
+        tag_name1 = myList[0]
+        tag_name2 = myList[1]
+        image_name = image_name + ".gif"
+        print(image_name)
+        print(tag_name1)
+        print(tag_name2)
+        image_name = tk.PhotoImage(file=image_name) #blackpiece, technically can just hard code it
+        #Remove piece
+        self.canvas.delete(name)
+        xCoord = (destCol * self.size) + int(self.size/2)
+        yCoord = (destRow * self.size) + int(self.size/2)
+        print("xCoord, yCoord", xCoord, yCoord)
+        self.canvas.create_image(xCoord,yCoord,image=image_name, tags=(tag_name1, tag_name2),anchor="c")
+        self.placepiece(image_name, 0, 0)
+        
+        #Data Struct Portion of movepiece (backend)
+        Client.checkerboard[oldCoordX][oldCoordY] = 's'
+        if(tag_name2 == "blackpiecetag"):
+            Client.checkerboard[destRow][destCol] = 'o'
+        elif(tag_name2 == "redpiecetag"):
+            Client.checkerboard[destRow][destCol] = 'x'
+            
+    def enable_callback(self):
+        self.canvas.bind("<Button-1>", self.client_game_callback)
+        self.canvas.bind("<Button-3>", self.client_game_callback)
+        
+    def client_game_callback(self, event):
+        #basically binding of the X pieces and its movement from GUI are handled
+        print("clicked at", event.x, event.y)
+        #if(Server.turn%2 == 1):
+        if(self.click_counter == 0):
+            #pick a black piece
+            self.old_x_coord = event.x
+            self.old_y_coord = event.y
+            #use self.compute_indices() to find the piece name
+            #self.old_O_piece_clicked = piece_name
+            my_index = self.compute_indices(event.x, event.y)
+            for my_piece_X in range(len(Client.coordArrayX)):
+                if(my_index[0] == Client.coordArrayX[my_piece_X][1]):
+                    if(my_index[1] == Client.coordArrayX[my_piece_X][2]):
+                        self.old_X_piece_clicked = Client.coordArrayX[my_piece_X][0]
+            self.click_counter = 1
+            return
+        if(self.click_counter == 1):
+            self.click_counter = 0
+            #use self.old_x_coord and self.old_y_coord
+            #to determine piece name
+            #self.movepiece(name, destRow, destCol)
+            my_old_index = self.compute_indices(self.old_x_coord, self.old_y_coord) 
+            my_index = self.compute_indices(event.x, event.y)
+            #validate the red piece movement here
+            if((my_index[0] == my_old_index[0] - 1) or (my_index[0] == my_old_index[0] + 1)):
+                if((my_index[1] == my_old_index[1] + 1)):
+                    self.movepiece(self.old_X_piece_clicked, my_index[0], my_index[1])
+                    self.update_info_GUI()
+                    #Server.numCaptured = Server.numCaptured + 1
+                    Client.turn_count = Client.turn_count + 1
+                    print("Turn counter should be: " + str(Client.turn_count))
+            return
+        # elif(Server.turn%2 == 1):
+            # #redraw GUI based on info from client
+        # elif(Server.numCaptured == 12 and Server.numRemaining == 0)
+            # print("Gameover")
+            
+    def game_on(self):
+        self.click_counter = 0
+        self.old_x_coord = 0
+        self.old_y_coord = 0
+        self.old_X_piece_clicked = ""
+        self.enable_callback()
+        #we want to bind player presses to the board and act accordingly
+        
+    def compute_indices(self, x_coord, y_coord):
+        #given pixel values, return row and y  values as tuple
+        if(y_coord <40):
+            if(x_coord <40):
+                return (0,0)
+            elif(x_coord <80):
+                return (0,1)
+            elif(x_coord <120):
+                return (0,2)
+            elif(x_coord <160):
+                return (0,3)
+            elif(x_coord <200):
+                return (0,4)
+            elif(x_coord <240):
+                return (0,5)
+            elif(x_coord <280):
+                return (0,6)
+            else:               
+                return (0,7)
+        elif(y_coord < 80):
+            if(x_coord <40):
+                return (1,0)
+            elif(x_coord <80):
+                return (1,1)
+            elif(x_coord <120):
+                return (1,2)
+            elif(x_coord <160):
+                return (1,3)
+            elif(x_coord <200):
+                return (1,4)
+            elif(x_coord <240):
+                return (1,5)
+            elif(x_coord <280):
+                return (1,6)
+            else:               
+                return (1,7)
+                
+        elif(y_coord < 120):
+            if(x_coord <40):
+                return (2,0)
+            elif(x_coord <80):
+                return (2,1)
+            elif(x_coord <120):
+                return (2,2)
+            elif(x_coord <160):
+                return (2,3)
+            elif(x_coord <200):
+                return (2,4)
+            elif(x_coord <240):
+                return (2,5)
+            elif(x_coord <280):
+                return (2,6)
+            else:               
+                return (2,7)
+
+        elif(y_coord < 160):
+            if(x_coord <40):
+                return (3,0)
+            elif(x_coord <80):
+                return (3,1)
+            elif(x_coord <120):
+                return (3,2)
+            elif(x_coord <160):
+                return (3,3)
+            elif(x_coord <200):
+                return (3,4)
+            elif(x_coord <240):
+                return (3,5)
+            elif(x_coord <280):
+                return (3,6)
+            else:               
+                return (3,7)
+
+        elif(y_coord < 200):
+            if(x_coord <40):
+                return (4,0)
+            elif(x_coord <80):
+                return (4,1)
+            elif(x_coord <120):
+                return (4,2)
+            elif(x_coord <160):
+                return (4,3)
+            elif(x_coord <200):
+                return (4,4)
+            elif(x_coord <240):
+                return (4,5)
+            elif(x_coord <280):
+                return (4,6)
+            else:               
+                return (4,7)
+
+        elif(y_coord < 240):
+            if(x_coord <40):
+                return (5,0)
+            elif(x_coord <80):
+                return (5,1)
+            elif(x_coord <120):
+                return (5,2)
+            elif(x_coord <160):
+                return (5,3)
+            elif(x_coord <200):
+                return (5,4)
+            elif(x_coord <240):
+                return (5,5)
+            elif(x_coord <280):
+                return (5,6)
+            else:               
+                return (5,7)
+                
+        elif(y_coord < 280):
+            if(x_coord <40):
+                return (6,0)
+            elif(x_coord <80):
+                return (6,1)
+            elif(x_coord <120):
+                return (6,2)
+            elif(x_coord <160):
+                return (6,3)
+            elif(x_coord <200):
+                return (6,4)
+            elif(x_coord <240):
+                return (6,5)
+            elif(x_coord <280):
+                return (6,6)
+            else:               
+                return (6,7)
+                
+        else:
+            if(x_coord <40):
+                return (7,0)
+            elif(x_coord <80):
+                return (7,1)
+            elif(x_coord <120):
+                return (7,2)
+            elif(x_coord <160):
+                return (7,3)
+            elif(x_coord <200):
+                return (7,4)
+            elif(x_coord <240):
+                return (7,5)
+            elif(x_coord <280):
+                return (7,6)
+            else:               
+                return (7,7)
+
+                
     def init_info_GUI(self):
-        print("Placeholder")
-    def init_menubar_GUI(self):
-        print("Placeholder")
+        #instantiate the components 
+        self.label_text1 = "Timer: "
+        self.label_text2 = "Turn Counter: "
+        self.label_text3 = "Num Pieces Captured: "
+
+        self.GUI_Button1 = tk.Button(self.canvas, text='Rules', command=self.printRules)
+        self.GUI_Button1.grid(padx = 450, pady = 0, row = 1, column = 1)
+        self.TIMER_Label = tk.Label(self.canvas, text=self.label_text1)
+        self.TIMER_Label.grid(padx = 0, row = 2, column = 1)
+        self.GUI_Label2 = tk.Label(self.canvas, text=self.label_text2)
+        self.GUI_Label2.grid(padx = 0, row = 3, column = 1)
+        self.GUI_Label3 = tk.Label(self.canvas, text=self.label_text3)
+        self.GUI_Label3.grid(padx = 0, row = 4, column = 1)
+
+        self.GUI_Button = tk.Button(self.canvas, text='Exit', command=self.endCommand)
+        self.GUI_Button.grid(padx = 0, row = 10, column = 1)#(side=tk.RIGHT)
+        
+        
+    def update_info_GUI(self):
+        self.label_text2 = "Turn Counter: " + str(Client.turn_count)
+        self.label_text3 = "Num Pieces Captured: " + str(Client.numCaptured)
+        print("disp_info_GUI Placeholder")
+        
+        self.GUI_Label2.config(text = self.label_text2)
+        self.GUI_Label3.config(text = self.label_text3)
         
     def printHello(self):
+        self.label_text1Count+=1
         print("Hello World!")
+        if(self.label_text1Count%2 == 1):
+            self.label_text1.set("Test")
+        else:
+            self.label_text1.set("Not Test")
+            
+        print("Set new text")
         
+    def printRules(self):
+        messagebox.showinfo("Rules", "Move your checker pieces diagonally\n and capture their pieces!")
+        os.startfile('images\Rules.png')
+        
+    def one_sec_counter(self, label):
+        counter = count(0)
+        def update_func():
+            label.config(text="Timer: " + str(next(counter)) + " sec")
+            label.after(1100, update_func) #after 1 sec or 1000 ms
+            #this uses recursion
+        update_func()        
         
     def processIncoming(self):
         """Handle all messages currently in the queue, if any."""
@@ -674,7 +1039,7 @@ class Client_Gui:
                 # simple test, print it (in real life, you would
                 # suitably update the GUI's display in a richer fashion).
                 print("Printing my message", msg)
-                self.labe1_text1.set(msg)
+                self.label_text1.set(msg)
             except queue.Empty:
                 # just on general principles, although we don't
                 # expect this branch to be taken in this case
@@ -695,10 +1060,12 @@ class Client:
     RECV_BUFFER_SIZE = 1024
 
     def __init__(self):
-        self.checkerboard = {}
+        Client.checkerboard = [[], [], [], [], [], [], [], []] #{} we want class variable not instance variable! Can define above
+        Client.numCaptured = 0
+        Client.numRemaining = 12
+        Client.turn_count = 1
         self.init_board()
-        self.turn_count = 1
-        self.setup_GUI()
+        self.setup_Gui()
 
     def init_board(self):
         #we will define [0,0] to be top left corner
@@ -714,23 +1081,37 @@ class Client:
         # | o s o s o s o s
         # | s o s o s o s o
         # *** Note we will need to flip what is seen from client side on GUI
-        coordArrayX = {(0,1),(0,3),(0,5),(0,7), 
+        Client.coordArrayX = [["piece1",5,0],["piece2",5,2],["piece3",5,4],["piece4",5,6], 
+                        ["piece5",6,1], ["piece6",6,3], ["piece7",6,5], ["piece8",6,7],
+                        ["piece9",7,0],["piece10",7,2],["piece11",7,4],["piece12",7,6]]
+        Client.coordArrayO = [["piece13",0,1],["piece14",0,3],["piece15",0,5],["piece16",0,7], 
+                        ["piece17",1,0], ["piece18",1,2], ["piece19",1,4], ["piece20",1,6],
+                        ["piece21",2,1],["piece22",2,3],["piece23",2,5],["piece24",2,7]]
+        init_coordArrayX = {(5,0),(5,2),(5,4),(5,6), 
+                        (6,1), (6,3), (6,5), (6,7),
+                        (7,0),(7,2),(7,4),(7,6)}
+        init_coordArrayO = {(0,1),(0,3),(0,5),(0,7), 
                         (1,0), (1,2), (1,4), (1,6),
-                        (2,1),(2,3),(2,5),(2,7)}
-        coordArrayO = {(5,1),(5,3),(5,5),(5,7), 
-                        (6,0), (6,2), (6,4), (6,6),
-                        (7,1),(7,3),(7,5),(7,7)}
+                        (2,1),(2,3),(2,5),(2,7)}                        
+                        
+                        
+
+
         for row in range(8):
             for col in range(8):
-                if((row,col) in coordArrayX):
-                    self.checkerboard[(row,col)] = 'x'
-                elif((row,col) in coordArrayO):
-                    self.checkerboard[(row,col)] = 'o'
+                Client.checkerboard[row].append('s')
+                
+        for row in range(8):
+            for col in range(8):
+                if((row,col) in init_coordArrayX):
+                    Client.checkerboard[row][col] = 'x'
+                elif((row,col) in init_coordArrayO):
+                    Client.checkerboard[row][col] = 'o'
                 else:
-                    self.checkerboard[(row,col)] = 's'   
+                    Client.checkerboard[row][col] = 's'                        
         #####################################################
 
-    def setup_GUI(self):
+    def setup_Gui(self):
         self.master = tk.Tk() #master = root
         self.master.title("Checkers: Client")
         self.master.minsize(width=640, height=320)
@@ -752,7 +1133,6 @@ class Client:
         # Start the periodic call in the GUI to check if the queue contains
         # anything
         self.periodicCall()
-            
         self.master.mainloop()
         
     def periodicCall(self):
