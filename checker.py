@@ -682,6 +682,7 @@ class Client_Gui:
         self.game_on()
         
     def draw_board(self):
+        self.canvas.delete("square")
         color = self.color2
         for row in range(self.rows):
             color = self.color1 if color == self.color2 else self.color2
@@ -700,13 +701,13 @@ class Client_Gui:
         redking = tk.PhotoImage(file="redking.gif")
         redpiece = tk.PhotoImage(file="redpiece.gif")
         #initial population of all the pieces for server side
-        init_coordArrayX = {(5,0),(5,2),(5,4),(5,6), 
-                        (6,1), (6,3), (6,5), (6,7),
-                        (7,0),(7,2),(7,4),(7,6)}
-        init_coordArrayO = {(0,1),(0,3),(0,5),(0,7), 
-                        (1,0), (1,2), (1,4), (1,6),
-                        (2,1),(2,3),(2,5),(2,7)}
-        pieceCounter = 1
+        init_coordArrayX = {(7,6),(7,4),(7,2),(7,0),
+                            (6,7),(6,5), (6,3), (6,1),
+                            (5,6), (5,4),(5,2),(5,0)}
+        init_coordArrayO = {(2,7),(2,5),(2,3),(2,1),
+                            (1,6),(1,4),(1,2),(1,0),
+                            (0,7), (0,5), (0,3),(0,1),}
+        pieceCounter = 24 #this needs to start from max and decrement down since we flipped everything!!!!!
         
         for row in range(8):
             for col in range(8):
@@ -714,12 +715,13 @@ class Client_Gui:
                     xCoord = (col * self.size) + int(self.size/2)
                     yCoord = (row * self.size) + int(self.size/2)
                     self.canvas.create_image(xCoord,yCoord,image=blackpiece, tags=("piece"+str(pieceCounter), "blackpiecetag"),anchor="c")
-                    pieceCounter = pieceCounter + 1
+                    pieceCounter = pieceCounter - 1
                 elif (row,col) in init_coordArrayO:
                     xCoord = (col * self.size) + int(self.size/2)
                     yCoord = (row * self.size) + int(self.size/2)
                     self.canvas.create_image(xCoord,yCoord, image=redpiece, tags=("piece"+str(pieceCounter), "redpiecetag"),anchor="c")
-                    pieceCounter = pieceCounter + 1
+                    pieceCounter = pieceCounter - 1
+        print("Populated pieces, pieceCounter at end is: "+ str(pieceCounter))
         self.placepiece(blackpiece, 0, 0)
         self.placepiece(redpiece, 0, 0)
 
@@ -749,6 +751,7 @@ class Client_Gui:
         
         #GUI Portion of movepiece (frontend)
         #Store data
+        print("name is: "+name)
         myList = self.canvas.gettags(name)
         #find current location in the board
         for sublist in Client.coordArrayX:
@@ -771,6 +774,7 @@ class Client_Gui:
         print(tag_name2)
         image_name = tk.PhotoImage(file=image_name) #blackpiece, technically can just hard code it
         #Remove piece
+        print("name is:" + name)
         self.canvas.delete(name)
         xCoord = (destCol * self.size) + int(self.size/2)
         yCoord = (destRow * self.size) + int(self.size/2)
@@ -800,6 +804,7 @@ class Client_Gui:
             #use self.compute_indices() to find the piece name
             #self.old_O_piece_clicked = piece_name
             my_index = self.compute_indices(event.x, event.y)
+            print("my_index is: "+str(my_index[0])+" " + str(my_index[1]))
             for my_piece_X in range(len(Client.coordArrayX)):
                 if(my_index[0] == Client.coordArrayX[my_piece_X][1]):
                     if(my_index[1] == Client.coordArrayX[my_piece_X][2]):
@@ -1081,12 +1086,12 @@ class Client:
         # | o s o s o s o s
         # | s o s o s o s o
         # *** Note we will need to flip what is seen from client side on GUI
-        Client.coordArrayX = [["piece1",5,0],["piece2",5,2],["piece3",5,4],["piece4",5,6], 
-                        ["piece5",6,1], ["piece6",6,3], ["piece7",6,5], ["piece8",6,7],
-                        ["piece9",7,0],["piece10",7,2],["piece11",7,4],["piece12",7,6]]
-        Client.coordArrayO = [["piece13",0,1],["piece14",0,3],["piece15",0,5],["piece16",0,7], 
-                        ["piece17",1,0], ["piece18",1,2], ["piece19",1,4], ["piece20",1,6],
-                        ["piece21",2,1],["piece22",2,3],["piece23",2,5],["piece24",2,7]]
+        Client.coordArrayX = [["piece12",5,0],["piece11",5,2],["piece10",5,4],["piece9",5,6], 
+                        ["piece8",6,1], ["piece7",6,3], ["piece6",6,5], ["piece5",6,7],
+                        ["piece4",7,0],["piece3",7,2],["piece2",7,4],["piece1",7,6]]
+        Client.coordArrayO = [["piece24",0,1],["piece23",0,3],["piece22",0,5],["piece21",0,7], 
+                        ["piece20",1,0], ["piece19",1,2], ["piece18",1,4], ["piece17",1,6],
+                        ["piece16",2,1],["piece15",2,3],["piece14",2,5],["piece13",2,7]]
         init_coordArrayX = {(5,0),(5,2),(5,4),(5,6), 
                         (6,1), (6,3), (6,5), (6,7),
                         (7,0),(7,2),(7,4),(7,6)}
