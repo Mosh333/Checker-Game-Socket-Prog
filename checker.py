@@ -11,7 +11,10 @@ import queue
 import tkinter as tk
 from tkinter import messagebox
 import os
+import pickle
 from itertools import count
+import multiprocessing.pool
+import functools
 
 # By Moshiur Howlader
 # Use the standard echo client.
@@ -23,8 +26,11 @@ from itertools import count
 # GUI Server class
 ########################################################################
 class Server_Gui:
-    def __init__(self, master, queue, endCommand):
-        self.queue = queue
+    def __init__(self, master, recv_queue, send_queue, endCommand):
+        Server_Gui.send_msg_flag = 0
+        Server_Gui.msg_to_send = []
+        self.recv_queue = recv_queue
+        
         self.master = master
         self.endCommand = endCommand
         self.label_text1 = tk.StringVar()
@@ -168,6 +174,7 @@ class Server_Gui:
         tag_name1 = myList[0]
         tag_name2 = myList[1]
         image_name = image_name + ".gif"
+        image_name = "redpiece.gif"
         print(image_name)
         print(tag_name1)
         print(tag_name2)
@@ -227,6 +234,15 @@ class Server_Gui:
                     #Server.numCaptured = Server.numCaptured + 1
                     Server.turn_count = Server.turn_count + 1
                     print("Turn counter should be: " + str(Server.turn_count))
+                    Server_Gui.msg_to_send = [self.old_O_piece_clicked, [my_index[0], my_index[1]], [], Server.turn_count]
+                    Server_Gui.send_msg_flag = 1
+                    #Python Queue class are synchronized so we can
+                    #"put" from any threads and it will be synchronized
+                    #Server. or Server_Gui. Server_Queue.put(Server_Gui.msg_to_send)
+                    Server.send_queue.put(Server_Gui.msg_to_send)
+                    #Server.send_queue.join() This means that the queue is never being emptied
+                    print("Contents in the queue:", Server.send_queue.qsize())
+                    #Server.connection_handler(Server.socket.accept())
             return
         # elif(Server.turn%2 == 1):
             # #redraw GUI based on info from client
@@ -446,15 +462,25 @@ class Server_Gui:
         
     def processIncoming(self):
         """Handle all messages currently in the queue, if any."""
-        while self.queue.qsize():
+        #print("Server.recv_queue.qsize() is: ", Server.recv_queue.qsize())
+        while Server.recv_queue.qsize():
             try:
-                msg = self.queue.get(0)
+                msg = self.recv_queue.get(0)
                 # Check contents of message and do whatever is needed. As a
                 # simple test, print it (in real life, you would
                 # suitably update the GUI's display in a richer fashion).
-                print("Printing my message", msg)
-                self.label_text1.set(msg)
-            except queue.Empty:
+                decoded_msg = pickle.loads(pickle.dumps(msg))
+                print("decoded_msg is: ", decoded_msg)
+                self.client_moved_piece = decoded_msg[0]
+                self.client_new_piece_coord = decoded_msg[1]
+                self.client_removed_pieces = decoded_msg[2]
+                Server.turn_count = decoded_msg[3]
+                print("Printing my message", self.client_moved_piece)
+                print("Printing my message", self.client_new_piece_coord)
+                print("Printing my message", self.client_removed_pieces)
+                print("Printing my message", Server.turn_count)
+                self.GUI_Label2.config(text=self.client_moved_piece)
+            except recv_queue.Empty:
                 # just on general principles, although we don't
                 # expect this branch to be taken in this case
                 pass
@@ -532,10 +558,10 @@ class Server:
         self.master.maxsize(width=640, height=320)
         self.master.iconbitmap('fireball.ico')
         #Create Queue for I/O communication
-        self.queue = queue.Queue() #Queue() class
-        
+        Server.recv_queue = queue.Queue() #Queue() class
+        Server.send_queue = queue.Queue()
         #Setup GUI here (includes the Checkerboard)
-        self.gui = Server_Gui(self.master, self.queue, self.endGame)
+        self.gui = Server_Gui(self.master, Server.recv_queue, Server.send_queue, self.endGame)
         
         # Set up the thread to do asynchronous I/O
         # More threads can also be created and used, if necessary
@@ -554,6 +580,7 @@ class Server:
         """
         Check every 200 ms if there is something new in the queue.
         """
+        #print("Size of recv_queue is: ", Server.recv_queue.qsize())
         self.gui.processIncoming()
         if not self.running:
             # This is the brutal stop of the system. You may want to do
@@ -565,16 +592,23 @@ class Server:
     def create_listen_socket(self):
         try:
             # Create an IPv4 TCP socket.
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            Server.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
             # Get socket layer socket options.
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            Server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
             # Bind socket to socket address, i.e., IP address and port.
-            self.socket.bind( (Server.HOSTNAME, Server.PORT) )
+            Server.socket.bind( (Server.HOSTNAME, Server.PORT) )
 
             # Set socket to listen state.
-            self.socket.listen(Server.BACKLOG)
+            Server.socket.listen(Server.BACKLOG)
+            
+            #Set socket to non-blocking
+            #Server.socket.setblocking(False)
+            
+            #Set socket timeout to 0.2 sec or 200 ms
+            #Server.socket.settimeout(0.2)
+
             print("Listening on port {} ...".format(Server.PORT))
 
         except Exception as msg:
@@ -582,52 +616,91 @@ class Server:
             sys.exit(1)
 
     def process_connections_forever(self):
-        try:
-            while True:
-                # Block while waiting for accepting incoming
-                # connections. When one is accepted, pass the new
-                # (cloned) socket reference to the connection handler
-                # function.
-                self.connection_handler(self.socket.accept())
+        while True:
+            try:
+                while True:
+                    # Block while waiting for accepting incoming
+                    # connections. When one is accepted, pass the new
+                    # (cloned) socket reference to the connection handler
+                    # function.
+                    self.connection_handler(Server.socket.accept())
 
-        except Exception as msg:
-            print(msg)
-        except KeyboardInterrupt:
-            print()
-        finally:
-            print("Closing server socket ...")
-            self.socket.close()
-            sys.exit(1)
+            except Exception as msg:
+                print(msg)
+            except KeyboardInterrupt:
+                print()
+            except TimeoutError:
+                print("TimeoutError! That's good passing")
+                pass
+            finally:
+                print("just casually passing from finally block")
+                pass
+                print("Closing server socket ...")
+                self.socket.close()
+                sys.exit(1)
 
     def connection_handler(self, client):
         connection, address_port = client
         print("-" * 72)
         print("Connection received from {}.".format(address_port))
-
+        print("Server_Gui.send_msg_flag is:", Server_Gui.send_msg_flag)
         while True:
-            # Receive bytes over the TCP connection. This will block
-            # until "at least 1 byte or more" is available.
-            recvd_bytes = connection.recv(Server.RECV_SIZE)
-            
-            # If recv returns with zero bytes, the other end of the
-            # TCP connection has closed (The other end is probably in
-            # FIN WAIT 2 and we are in CLOSE WAIT.). If so, close the
-            # server end of the connection and get the next client
-            if len(recvd_bytes) == 0:
-                print("Closing {} client connection ... ".format(address_port))
-                connection.close()
-                break
+            #print("In process_connections_forever()!!!")
+            if(Server.send_queue.qsize()): #aka Server_queue
+                # here we need to make another queue just for the
+                # server gui class and server to be able to communicate
+                # this block is for sending only!!!
+                # other queue is for receiving only!!!
+                #elif(Server_Gui.send_msg_flag == 1): #sending
+                #Here we want to send the checker data
+                print("Sending Server data to Client!")
+                data_to_send = Server.send_queue.get() #ie: list = ["piece5",[2,4],["piece5","piece9"],5]
                 
-            # Decode the received bytes back into strings. Then output
-            # them.
-            recvd_str = recvd_bytes.decode(Server.MSG_ENCODING)
-            print("Received and storing into queue to disp on GUI: ", recvd_str)
-            #msg should be the game data that you want to send to the server!!!!!
-            self.queue.put(recvd_str) #msg
-                
-            # Send the received bytes back to the client.
-            connection.sendall(recvd_bytes)
-            print("Sent: ", recvd_str)
+                #below cannot work for decode(utf-8)
+                #since it only supports strings, not dynamic data type like above
+                pickled_byte_msg = pickle.dumps(data_to_send) #pickled into byte object
+                # Send the received bytes back to the client.
+                connection.sendall(pickled_byte_msg)
+                print("Sent: ", data_to_send)
+                print("Contents in the queue: ", Server.send_queue.qsize())
+                #Server_Gui.send_msg_flag == 0
+            else:
+                pass
+                #print("HELLO WORLD!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                #time.sleep(5)
+                # pickled_data = connection.recv(1024)
+                # Server.recv_queue.put(pickled_data)
+                # print("Size of Client.recv_queue is: ", Client.recv_queue.qsize())
+                # try:
+                    # self.connection_receive(connection)
+                # except TimeoutError:
+                    # print("Time outy boiiiiiiiiii!")
+                    # pass
+    
+    def timeout(max_timeout):
+        """Timeout decorator, parameter in seconds."""
+        def timeout_decorator(item):
+            """Wrap the original function."""
+            @functools.wraps(item)
+            def func_wrapper(*args, **kwargs):
+                """Closure for function."""
+                try:
+                    pool = multiprocessing.pool.ThreadPool(processes=1)
+                    async_result = pool.apply_async(item, args, kwargs)
+                    # raises a TimeoutError if execution exceeds max_timeout
+                except:
+                    pool.close() #make sure thread dies, and doesnt linger
+                return async_result.get(max_timeout)
+            return func_wrapper
+        return timeout_decorator
+    
+    @timeout(5.0)
+    def connection_receive(self, connection):
+        print("attempting to receive data")
+        pickled_data = connection.recv(1024)
+        Server.recv_queue.put(pickled_data)
+        print("Size of Client.recv_queue is: ", Server.recv_queue.qsize())
+        
     def server_thread(self):
         #We will handle our asynchronous I/O of socket communication here.
         self.create_listen_socket()
@@ -650,8 +723,10 @@ class Server:
 # GUI Client class
 ########################################################################
 class Client_Gui:
-    def __init__(self, master, queue, endCommand):
-        self.queue = queue
+    def __init__(self, master, recv_queue, send_queue, endCommand):
+        Client_Gui.send_msg_flag = 0
+        Client_Gui.msg_to_send = []
+        self.recv_queue = recv_queue
         self.master = master
         self.endCommand = endCommand
         self.label_text1 = tk.StringVar()
@@ -826,6 +901,7 @@ class Client_Gui:
                     #Server.numCaptured = Server.numCaptured + 1
                     Client.turn_count = Client.turn_count + 1
                     print("Turn counter should be: " + str(Client.turn_count))
+            Client_Gui.send_msg_flag = 1
             return
         # elif(Server.turn%2 == 1):
             # #redraw GUI based on info from client
@@ -1037,15 +1113,27 @@ class Client_Gui:
         
     def processIncoming(self):
         """Handle all messages currently in the queue, if any."""
-        while self.queue.qsize():
+        #print("Is processIncoming() active on Client?") # yes its active
+        #print("Client.recv_queue.qsize() is: ", Client.recv_queue.qsize())
+        while Client.recv_queue.qsize():
             try:
-                msg = self.queue.get(0)
+                msg = self.recv_queue.get(0)
                 # Check contents of message and do whatever is needed. As a
                 # simple test, print it (in real life, you would
                 # suitably update the GUI's display in a richer fashion).
-                print("Printing my message", msg)
-                self.label_text1.set(msg)
-            except queue.Empty:
+                decoded_msg = pickle.loads(msg)
+                self.server_moved_piece = decoded_msg[0]
+                self.server_new_piece_coord = decoded_msg[1]
+                self.server_removed_pieces = decoded_msg[2]
+                Client.turn_count = decoded_msg[3]
+                print("Printing my message", self.server_moved_piece)
+                print("Printing my message", self.server_new_piece_coord)
+                print("Printing my message", self.server_removed_pieces)
+                print("Printing my message", Client.turn_count)
+                self.GUI_Label2.config(text=self.server_moved_piece)
+                print("Printing my byte object message", msg)
+                self.GUI_Label2.config(text=msg)
+            except recv_queue.Empty:
                 # just on general principles, although we don't
                 # expect this branch to be taken in this case
                 pass
@@ -1123,10 +1211,10 @@ class Client:
         self.master.maxsize(width=640, height=320)
         self.master.iconbitmap('fireball.ico')
         #Create Queue for I/O communication
-        self.queue = queue.Queue() #Queue() class
-        
+        Client.recv_queue = queue.Queue() #Queue() class
+        Client.send_queue = queue.Queue() #Queue() class
         #Setup GUI here (includes the Checkerboard)
-        self.gui = Client_Gui(self.master, self.queue, self.endGame)
+        self.gui = Client_Gui(self.master, Client.recv_queue, Client.send_queue, self.endGame)
         
         # Set up the thread to do asynchronous I/O
         # More threads can also be created and used, if necessary
@@ -1156,6 +1244,7 @@ class Client:
         try:
             # Create an IPv4 TCP socket.
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            #self.socket.setblocking(0) #making it non-blocking causes the data to not be caught :<
         except Exception as msg:
             print(msg)
             sys.exit(1)
@@ -1168,57 +1257,50 @@ class Client:
             print(msg)
             sys.exit(1)
 
-    def get_console_input(self):
-        # In this version we keep prompting the user until a non-blank
-        # line is entered.
-        while True:
-            self.input_text = input("Input: ")
-            if self.input_text != "":
-                break
+
     
-    def send_console_input_forever(self):
+    def send_server_output_forever(self):
         while True:
             try:
-                self.get_console_input()
-                self.connection_send()
-                self.connection_receive()
+                #self.get_console_input()
+                #self.connection_send()
+                #self.connection_receive()
+                self.connection_handler(self.socket)
             except (KeyboardInterrupt, EOFError):
                 print()
                 print("Closing server connection ...")
                 self.socket.close()
                 sys.exit(1)
                 
-    def connection_send(self):
-        try:
-            # Send string objects over the connection. The string must
-            # be encoded into bytes objects first.
-            self.socket.sendall(self.input_text.encode(Server.MSG_ENCODING))
-        except Exception as msg:
-            print(msg)
-            sys.exit(1)
 
-    def connection_receive(self):
-        try:
-            # Receive and print out text. The received bytes objects
-            # must be decoded into string objects.
-            recvd_bytes = self.socket.recv(Client.RECV_BUFFER_SIZE)
 
-            # recv will block if nothing is available. If we receive
-            # zero bytes, the connection has been closed from the
-            # other end. In that case, close the connection on this
-            # end and exit.
-            if len(recvd_bytes) == 0:
-                print("Closing server connection ... ")
-                self.socket.close()
-                sys.exit(1)
 
-            print("Received: ", recvd_bytes.decode(Server.MSG_ENCODING))
-            #msg should be the game data that you want to send to the server!!!!!
-            self.queue.put(recvd_bytes.decode(Server.MSG_ENCODING))
 
-        except Exception as msg:
-            print(msg)
-            sys.exit(1)    
+
+    def connection_handler(self, connection):
+        while True:
+            if(Client.send_queue.qsize()): #aka Client_Queue... for sending
+                # elif(Client_Gui.send_msg_flag == 1): #sending
+                #Here we want to send the checker data
+                print("Sending Client Data to Server!")
+                #msg should be the game data that you want to send to the server gui!!!!!
+                data_to_send = Client.send_queue.get() #ie: list = ["piece5",[2,4],["piece5","piece9"],5]
+                    
+                #below cannot work for decode(utf-8)
+                #since it only supports strings, not dynamic data type like above
+                pickled_byte_msg = pickle.dumps(data_to_send) #pickled into byte object
+                # Send the received bytes back to the client.
+                connection.sendall(pickled_byte_msg)
+                print("Sent: ", data_to_send)
+                print("Contents in the queue: ", Client.send_queue.qsize())
+                #Client_Gui.send_msg_flag == 0 
+            #elif(len(connection.recv(1024))>0): #this socket made to be non-blocking, it polls then skips
+            else:
+                pickled_data = connection.recv(1024)
+                Client.recv_queue.put(pickled_data)
+                print("Size of Client.recv_queue is: ", Client.recv_queue.qsize())
+
+            
             
     def client_thread(self):
         #We will handle our asynchronous I/O of socket communication here.
@@ -1226,7 +1308,7 @@ class Client:
         self.connect_to_server()
         while self.running:
             #insert socket comm here
-            self.send_console_input_forever()
+            self.send_server_output_forever()
             #msg should be the game data that you want to send to the server!!!!!
             #self.queue.put(msg)
         

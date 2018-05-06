@@ -1,0 +1,25 @@
+PS C:\Users\howla_000> python
+Python 3.6.4 (v3.6.4:d48eceb, Dec 19 2017, 06:04:45) [MSC v.1900 32 bit (Intel)] on win32
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import pickle
+>>> list = ["piece5",[2,4],["piece5","piece9"],5]
+>>> list
+['piece5', [2, 4], ['piece5', 'piece9'], 5]
+>>> data_to_send = pickle.dumps(list)
+>>> data_to_send
+b'\x80\x03]q\x00(X\x06\x00\x00\x00piece5q\x01]q\x02(K\x02K\x04e]q\x03(h\x01X\x06\x00\x00\x00piece9q\x04eK\x05e.'
+>>> hi_data = pickle.dumps(data_to_send)
+>>> hi_data
+b'\x80\x03C4\x80\x03]q\x00(X\x06\x00\x00\x00piece5q\x01]q\x02(K\x02K\x04e]q\x03(h\x01X\x06\x00\x00\x00piece9q\x04eK\x05e.q\x00.'
+>>> hi_data = pickle.loads(data_to_send)
+>>> hi_data
+['piece5', [2, 4], ['piece5', 'piece9'], 5]
+>>> import sys
+>>> print sys.getsizeof(hi_data)
+  File "<stdin>", line 1
+    print sys.getsizeof(hi_data)
+            ^
+SyntaxError: invalid syntax
+>>> print(sys.getsizeof(hi_data))
+64
+>>>
