@@ -242,6 +242,7 @@ class Server_Gui:
                     Server.send_queue.put(Server_Gui.msg_to_send)
                     #Server.send_queue.join() This means that the queue is never being emptied
                     print("Contents in the queue:", Server.send_queue.qsize())
+                    print("Server.turn_count is: ", Server.turn_count)
                     #Server.connection_handler(Server.socket.accept())
             return
         # elif(Server.turn%2 == 1):
@@ -469,7 +470,7 @@ class Server_Gui:
                 # Check contents of message and do whatever is needed. As a
                 # simple test, print it (in real life, you would
                 # suitably update the GUI's display in a richer fashion).
-                decoded_msg = pickle.loads(pickle.dumps(msg))
+                decoded_msg = pickle.loads((msg))
                 print("decoded_msg is: ", decoded_msg)
                 self.client_moved_piece = decoded_msg[0]
                 self.client_new_piece_coord = decoded_msg[1]
@@ -646,7 +647,8 @@ class Server:
         print("Server_Gui.send_msg_flag is:", Server_Gui.send_msg_flag)
         while True:
             #print("In process_connections_forever()!!!")
-            if(Server.send_queue.qsize()): #aka Server_queue
+            #print("Server.turn_count is: ", Server.turn_count)
+            if(0 and Server.send_queue.qsize()): #aka Server_queue
                 # here we need to make another queue just for the
                 # server gui class and server to be able to communicate
                 # this block is for sending only!!!
@@ -663,14 +665,22 @@ class Server:
                 connection.sendall(pickled_byte_msg)
                 print("Sent: ", data_to_send)
                 print("Contents in the queue: ", Server.send_queue.qsize())
+                print("Server.turn_count is: ", Server.turn_count)
+                #time.sleep(3) #this does not do anything
                 #Server_Gui.send_msg_flag == 0
-            else:
-                pass
+            elif(1): #I CAN CHEAT THE SYSTEM AND AVOID DEALING WITH THREADING BY DOING BASIC BOOKKEEPING PROPERLY LUL
+                #Server.turn_count>5 and Server.turn_count<8
+                #IF TURN_COUNT%2==0 (EVEN) THEN BLOCK HERE SINCE WE KNOW WE SHOULD EXPECT SOME OUTPUT FROM CLIENT
+                #pass
                 #print("HELLO WORLD!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 #time.sleep(5)
-                # pickled_data = connection.recv(1024)
-                # Server.recv_queue.put(pickled_data)
-                # print("Size of Client.recv_queue is: ", Client.recv_queue.qsize())
+                print("we are fucking cock blockeddd!!!!!!!!! xDDDDDDDDDD")
+                pickled_data = connection.recv(1024)
+                print("the unpickled data is: ", pickle.loads(pickled_data))
+                Server.recv_queue.put(pickled_data)
+                print("Size of Client.recv_queue is: ", Server.recv_queue.qsize())
+                #time.sleep(1) #delay for a bit so the system bookkeeping variable can sync up
+                #break #since we got the data break out forcefully, we can QA later and see if we do need this, we shouldnt i think
                 # try:
                     # self.connection_receive(connection)
                 # except TimeoutError:
@@ -684,8 +694,8 @@ class Server:
             @functools.wraps(item)
             def func_wrapper(*args, **kwargs):
                 """Closure for function."""
+                pool = multiprocessing.pool.ThreadPool(processes=1)
                 try:
-                    pool = multiprocessing.pool.ThreadPool(processes=1)
                     async_result = pool.apply_async(item, args, kwargs)
                     # raises a TimeoutError if execution exceeds max_timeout
                 except:
@@ -901,11 +911,18 @@ class Client_Gui:
                     #Server.numCaptured = Server.numCaptured + 1
                     Client.turn_count = Client.turn_count + 1
                     print("Turn counter should be: " + str(Client.turn_count))
+                    Client_Gui.msg_to_send = [self.old_X_piece_clicked, [my_index[0], my_index[1]], [], Client.turn_count]
+                    Client_Gui.send_msg_flag = 1
+                    #Python Queue class are synchronized so we can
+                    #"put" from any threads and it will be synchronized
+                    Client.send_queue.put(Client_Gui.msg_to_send)
+                    print("Contents in the queue:", Client.send_queue.qsize())
+                    print("Client.turn_count is: ", Client.turn_count)
             Client_Gui.send_msg_flag = 1
             return
-        # elif(Server.turn%2 == 1):
+        # elif(Client.turn%2 == 1):
             # #redraw GUI based on info from client
-        # elif(Server.numCaptured == 12 and Server.numRemaining == 0)
+        # elif(Client.numCaptured == 12 and Client.numRemaining == 0)
             # print("Gameover")
             
     def game_on(self):
@@ -1284,8 +1301,9 @@ class Client:
                 #Here we want to send the checker data
                 print("Sending Client Data to Server!")
                 #msg should be the game data that you want to send to the server gui!!!!!
+                print("Contents in the queue: ", Client.send_queue.qsize())
                 data_to_send = Client.send_queue.get() #ie: list = ["piece5",[2,4],["piece5","piece9"],5]
-                    
+                print("Contents in the queue: ", Client.send_queue.qsize())    
                 #below cannot work for decode(utf-8)
                 #since it only supports strings, not dynamic data type like above
                 pickled_byte_msg = pickle.dumps(data_to_send) #pickled into byte object
@@ -1293,9 +1311,10 @@ class Client:
                 connection.sendall(pickled_byte_msg)
                 print("Sent: ", data_to_send)
                 print("Contents in the queue: ", Client.send_queue.qsize())
+                print("Client.turn_count is: ", Client.turn_count)
                 #Client_Gui.send_msg_flag == 0 
             #elif(len(connection.recv(1024))>0): #this socket made to be non-blocking, it polls then skips
-            else:
+            elif(0 and Client.turn_count<3): #else:
                 pickled_data = connection.recv(1024)
                 Client.recv_queue.put(pickled_data)
                 print("Size of Client.recv_queue is: ", Client.recv_queue.qsize())
