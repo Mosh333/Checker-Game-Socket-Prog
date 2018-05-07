@@ -232,9 +232,7 @@ class Server_Gui:
                     self.movepiece(self.old_O_piece_clicked, my_index[0], my_index[1])
                     self.update_info_GUI()
                     #Server.numCaptured = Server.numCaptured + 1
-                    Server.turn_count = Server.turn_count + 1
-                    print("Turn counter should be: " + str(Server.turn_count))
-                    Server_Gui.msg_to_send = [self.old_O_piece_clicked, [my_index[0], my_index[1]], [], Server.turn_count]
+                    Server_Gui.msg_to_send = [self.old_O_piece_clicked, [my_index[0], my_index[1]], []]
                     Server_Gui.send_msg_flag = 1
                     #Python Queue class are synchronized so we can
                     #"put" from any threads and it will be synchronized
@@ -242,13 +240,7 @@ class Server_Gui:
                     Server.send_queue.put(Server_Gui.msg_to_send)
                     #Server.send_queue.join() This means that the queue is never being emptied
                     print("Contents in the queue:", Server.send_queue.qsize())
-                    print("Server.turn_count is: ", Server.turn_count)
-                    #Server.connection_handler(Server.socket.accept())
             return
-        # elif(Server.turn%2 == 1):
-            # #redraw GUI based on info from client
-        # elif(Server.numCaptured == 12 and Server.numRemaining == 0)
-            # print("Gameover")
 
             
 
@@ -475,11 +467,9 @@ class Server_Gui:
                 self.client_moved_piece = decoded_msg[0]
                 self.client_new_piece_coord = decoded_msg[1]
                 self.client_removed_pieces = decoded_msg[2]
-                Server.turn_count = decoded_msg[3]
                 print("Printing my message", self.client_moved_piece)
                 print("Printing my message", self.client_new_piece_coord)
                 print("Printing my message", self.client_removed_pieces)
-                print("Printing my message", Server.turn_count)
                 self.GUI_Label2.config(text=self.client_moved_piece)
             except recv_queue.Empty:
                 # just on general principles, although we don't
@@ -647,8 +637,7 @@ class Server:
         print("Server_Gui.send_msg_flag is:", Server_Gui.send_msg_flag)
         while True:
             #print("In process_connections_forever()!!!")
-            #print("Server.turn_count is: ", Server.turn_count)
-            if(0 and Server.send_queue.qsize()): #aka Server_queue
+            if(Server.send_queue.qsize()): #aka Server_queue
                 # here we need to make another queue just for the
                 # server gui class and server to be able to communicate
                 # this block is for sending only!!!
@@ -665,11 +654,8 @@ class Server:
                 connection.sendall(pickled_byte_msg)
                 print("Sent: ", data_to_send)
                 print("Contents in the queue: ", Server.send_queue.qsize())
-                print("Server.turn_count is: ", Server.turn_count)
-                #time.sleep(3) #this does not do anything
-                #Server_Gui.send_msg_flag == 0
-            elif(1): #I CAN CHEAT THE SYSTEM AND AVOID DEALING WITH THREADING BY DOING BASIC BOOKKEEPING PROPERLY LUL
-                #Server.turn_count>5 and Server.turn_count<8
+                Server.turn_count = Server.turn_count + 1
+            elif((Server.turn_count)%2==0): #I CAN CHEAT THE SYSTEM AND AVOID DEALING WITH THREADING BY DOING BASIC BOOKKEEPING PROPERLY LUL
                 #IF TURN_COUNT%2==0 (EVEN) THEN BLOCK HERE SINCE WE KNOW WE SHOULD EXPECT SOME OUTPUT FROM CLIENT
                 #pass
                 #print("HELLO WORLD!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -679,6 +665,7 @@ class Server:
                 print("the unpickled data is: ", pickle.loads(pickled_data))
                 Server.recv_queue.put(pickled_data)
                 print("Size of Client.recv_queue is: ", Server.recv_queue.qsize())
+                Server.turn_count = Server.turn_count + 1
                 #time.sleep(1) #delay for a bit so the system bookkeeping variable can sync up
                 #break #since we got the data break out forcefully, we can QA later and see if we do need this, we shouldnt i think
                 # try:
@@ -909,21 +896,13 @@ class Client_Gui:
                     self.movepiece(self.old_X_piece_clicked, my_index[0], my_index[1])
                     self.update_info_GUI()
                     #Server.numCaptured = Server.numCaptured + 1
-                    Client.turn_count = Client.turn_count + 1
-                    print("Turn counter should be: " + str(Client.turn_count))
-                    Client_Gui.msg_to_send = [self.old_X_piece_clicked, [my_index[0], my_index[1]], [], Client.turn_count]
+                    Client_Gui.msg_to_send = [self.old_X_piece_clicked, [my_index[0], my_index[1]], []]
                     Client_Gui.send_msg_flag = 1
                     #Python Queue class are synchronized so we can
                     #"put" from any threads and it will be synchronized
                     Client.send_queue.put(Client_Gui.msg_to_send)
                     print("Contents in the queue:", Client.send_queue.qsize())
-                    print("Client.turn_count is: ", Client.turn_count)
-            Client_Gui.send_msg_flag = 1
             return
-        # elif(Client.turn%2 == 1):
-            # #redraw GUI based on info from client
-        # elif(Client.numCaptured == 12 and Client.numRemaining == 0)
-            # print("Gameover")
             
     def game_on(self):
         self.click_counter = 0
@@ -1142,11 +1121,9 @@ class Client_Gui:
                 self.server_moved_piece = decoded_msg[0]
                 self.server_new_piece_coord = decoded_msg[1]
                 self.server_removed_pieces = decoded_msg[2]
-                Client.turn_count = decoded_msg[3]
                 print("Printing my message", self.server_moved_piece)
                 print("Printing my message", self.server_new_piece_coord)
                 print("Printing my message", self.server_removed_pieces)
-                print("Printing my message", Client.turn_count)
                 self.GUI_Label2.config(text=self.server_moved_piece)
                 print("Printing my byte object message", msg)
                 self.GUI_Label2.config(text=msg)
@@ -1311,13 +1288,14 @@ class Client:
                 connection.sendall(pickled_byte_msg)
                 print("Sent: ", data_to_send)
                 print("Contents in the queue: ", Client.send_queue.qsize())
-                print("Client.turn_count is: ", Client.turn_count)
-                #Client_Gui.send_msg_flag == 0 
+                Client.turn_count = Client.turn_count + 1
             #elif(len(connection.recv(1024))>0): #this socket made to be non-blocking, it polls then skips
-            elif(0 and Client.turn_count<3): #else:
+            elif((Client.turn_count)%2==1): # even turns are for client
+                print("we are fucking cock blockeddd!!!!!!!!! xDDDDDDDDDD")
                 pickled_data = connection.recv(1024)
                 Client.recv_queue.put(pickled_data)
                 print("Size of Client.recv_queue is: ", Client.recv_queue.qsize())
+                Client.turn_count = Client.turn_count + 1
 
             
             
