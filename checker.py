@@ -43,13 +43,6 @@ class Server_Gui:
         self.init_board_GUI()
         self.init_info_GUI()
         self.one_sec_counter(self.TIMER_Label)
-        # self.doneButton = tk.Button(master, text='Done', command=endCommand)
-        # self.doneButton.pack()
-        # self.testButton = tk.Button(master, text='Hello', command=self.printHello)
-        # self.testButton.pack()
-        # self.testIOdata = tk.Label(master, textvariable = self.label_text1)
-        # self.testIOdata.pack()
-        #self.label_text1.set("Hello Idiot")
         # Add more GUI stuff here depending on your specific needs
     def init_board_GUI(self):
         print("Placeholder")
@@ -121,14 +114,12 @@ class Server_Gui:
                     pieceCounter = pieceCounter + 1
         self.placepiece(blackpiece, 0, 0)
         self.placepiece(redpiece, 0, 0)
-        # for i in range(8):
-            # print("server checkerboard is at: ", Server.checkerboard[i])
+
         
-        #time.sleep(4)
         #self.movepiece("piece2", 7, 7)
         #self.movepiece("piece13", 0, 3)
         #self.canvas.create_image(300,300, image=blackpiece, tags=("piece2", "blackpiecetag"),anchor="c")
-
+        self.removepiece("piece5")
         
                 
     def placepiece(self, name, row, column): #this does not do what you think it does, magically makes everything appear
@@ -137,15 +128,19 @@ class Server_Gui:
         x0 = (column * self.size) + int(self.size/2)
         y0 = (row * self.size) + int(self.size/2)
         self.canvas.coords(name, x0, y0)
-        print("coordinates x0 and y0: ", x0, y0)
+        #print("coordinates x0 and y0: ", x0, y0)
         
     def removepiece(self, name):
-        #just remove from board
-        print("Placeholder")
-        oldCoordX = 5
-        oldCoordY = 5
+        #completely remove from board/game
         Server.numCaptured = Server.numCaptured + 1
-        self.canvas.gettags(name)
+        i = 0
+        for sublist in Server.coordArrayX:
+            if(sublist[0]==name):
+                del Server.coordArrayX[i]
+            i = i + 1
+        #print("removepiece() ", name, " from game")
+        self.canvas.delete(name)
+        #self.canvas.gettags(name)
         
     def movepiece(self, name, destRow, destCol): 
         #remove and place aka move piece
@@ -157,46 +152,53 @@ class Server_Gui:
         
         #GUI Portion of movepiece (frontend)
         #Store data
+        print("name is: "+name)
         myList = self.canvas.gettags(name)
         #find current location in the board
+        #also find piece in Server.coordArrayO        
+        #replace the coordinates for that piece
         for sublist in Server.coordArrayX:
+            print(sublist[0])
             if(sublist[0]==name):
+                print("Match in Server.coordArrayX")
                 oldCoordX = sublist[1]
                 oldCoordY = sublist[2]
+                sublist[1] = destRow
+                sublist[2] = destCol
+                break
         for sublist in Server.coordArrayO:
+            print(sublist[0])
             if(sublist[0]==name):
+                print("Match in Server.coordArrayO")
                 oldCoordX = sublist[1]
                 oldCoordY = sublist[2]
-        print(oldCoordX)
-        print(oldCoordY)
+                sublist[1] = destRow
+                sublist[2] = destCol
+                break
+        
+        # print("new coordinates are: ", sublist[1], sublist[2])
+        # print("old coordinates are: ", oldCoordX, oldCoordY)
+        # print("Server.coordArrayX is: ", Server.coordArrayX)
+        # print("Server.coordArrayO is: ", Server.coordArrayO)
         image_name = myList[1][0:-3]
-        print("image_name is", image_name)
+        #print("image_name is", image_name)
         tag_name1 = myList[0]
         tag_name2 = myList[1]
         image_name = image_name + ".gif"
-        image_name = "redpiece.gif"
-        print(image_name)
-        print(tag_name1)
-        print(tag_name2)
+        #image_name = "redpiece.gif"
+        # print(image_name)
+        # print(tag_name1)
+        # print(tag_name2)
         image_name = tk.PhotoImage(file=image_name) #blackpiece, technically can just hard code it
-        #Remove piece
+        #Relocate piece, not completely remove from board
         self.canvas.delete(name)
         xCoord = (destCol * self.size) + int(self.size/2)
         yCoord = (destRow * self.size) + int(self.size/2)
-        print("xCoord, yCoord", xCoord, yCoord)
+        #print("xCoord, yCoord", xCoord, yCoord)
         self.canvas.create_image(xCoord,yCoord,image=image_name, tags=(tag_name1, tag_name2),anchor="c")
         self.placepiece(image_name, 0, 0)
         
-        #Data Struct Portion of movepiece (backend)
-        Server.checkerboard[oldCoordX][oldCoordY] = 's'
-        if(tag_name2 == "blackpiecetag"):
-            Server.checkerboard[destRow][destCol] = 'o'
-        elif(tag_name2 == "redpiecetag"):
-            Server.checkerboard[destRow][destCol] = 'x'
-            
-        # print("Test if data struct alteration worked...")    
-        # for i in range(8):
-            # print("server checkerboard is at: ", Server.checkerboard[i])
+
 
     def enable_callback(self):
         self.canvas.bind("<Button-1>", self.server_game_callback)
@@ -204,43 +206,43 @@ class Server_Gui:
         
     def server_game_callback(self, event):
         #basically binding of the O pieces and its movement from GUI are handled
-        print("clicked at", event.x, event.y)
-        #if(Server.turn%2 == 1):
-        if(self.click_counter == 0):
-            #pick a red piece
-            self.old_x_coord = event.x
-            self.old_y_coord = event.y
-            #use self.compute_indices() to find the piece name
-            #self.old_O_piece_clicked = piece_name
-            my_index = self.compute_indices(event.x, event.y)
-            for my_piece_O in range(len(Server.coordArrayO)):
-                if(my_index[0] == Server.coordArrayO[my_piece_O][1]):
-                    if(my_index[1] == Server.coordArrayO[my_piece_O][2]):
-                        self.old_O_piece_clicked = Server.coordArrayO[my_piece_O][0]
-            self.click_counter = 1
-            return
-        if(self.click_counter == 1):
-            self.click_counter = 0
-            #use self.old_x_coord and self.old_y_coord
-            #to determine piece name
-            #self.movepiece(name, destRow, destCol)
-            my_old_index = self.compute_indices(self.old_x_coord, self.old_y_coord) 
-            my_index = self.compute_indices(event.x, event.y)
-            #validate the red piece movement here
-            if((my_index[0] == my_old_index[0] - 1) or (my_index[0] == my_old_index[0] + 1)):
-                if((my_index[1] == my_old_index[1] + 1)):
-                    self.movepiece(self.old_O_piece_clicked, my_index[0], my_index[1])
-                    self.update_info_GUI()
-                    #Server.numCaptured = Server.numCaptured + 1
-                    Server_Gui.msg_to_send = [self.old_O_piece_clicked, [my_index[0], my_index[1]], []]
-                    Server_Gui.send_msg_flag = 1
-                    #Python Queue class are synchronized so we can
-                    #"put" from any threads and it will be synchronized
-                    #Server. or Server_Gui. Server_Queue.put(Server_Gui.msg_to_send)
-                    Server.send_queue.put(Server_Gui.msg_to_send)
-                    #Server.send_queue.join() This means that the queue is never being emptied
-                    print("Contents in the queue:", Server.send_queue.qsize())
-            return
+        #print("clicked at", event.x, event.y)
+        if((Server.turn_count)%2==1):
+            if(self.click_counter == 0):
+                #pick a red piece
+                self.old_x_coord = event.x
+                self.old_y_coord = event.y
+                #use self.compute_indices() to find the piece name
+                #self.old_O_piece_clicked = piece_name
+                my_index = self.compute_indices(event.x, event.y)
+                for my_piece_O in range(len(Server.coordArrayO)):
+                    if(my_index[0] == Server.coordArrayO[my_piece_O][1]):
+                        if(my_index[1] == Server.coordArrayO[my_piece_O][2]):
+                            self.old_O_piece_clicked = Server.coordArrayO[my_piece_O][0]
+                self.click_counter = 1
+                return
+            if(self.click_counter == 1):
+                self.click_counter = 0
+                #use self.old_x_coord and self.old_y_coord
+                #to determine piece name
+                #self.movepiece(name, destRow, destCol)
+                my_old_index = self.compute_indices(self.old_x_coord, self.old_y_coord) 
+                my_index = self.compute_indices(event.x, event.y)
+                #validate the red piece movement here
+                if((my_index[0] == my_old_index[0] - 1) or (my_index[0] == my_old_index[0] + 1)):
+                    if((my_index[1] == my_old_index[1] + 1)):
+                        self.movepiece(self.old_O_piece_clicked, my_index[0], my_index[1])
+                        self.update_info_GUI()
+                        #Server.numCaptured = Server.numCaptured + 1
+                        Server_Gui.msg_to_send = [self.old_O_piece_clicked, [my_index[0], my_index[1]], []]
+                        Server_Gui.send_msg_flag = 1
+                        #Python Queue class are synchronized so we can
+                        #"put" from any threads and it will be synchronized
+                        #Server. or Server_Gui. Server_Queue.put(Server_Gui.msg_to_send)
+                        Server.send_queue.put(Server_Gui.msg_to_send)
+                        #Server.send_queue.join() This means that the queue is never being emptied
+                        print("Contents in the queue:", Server.send_queue.qsize())
+                return
 
             
 
@@ -424,7 +426,6 @@ class Server_Gui:
     def update_info_GUI(self):
         self.label_text2 = "Turn Counter: " + str(Server.turn_count)
         self.label_text3 = "Num Pieces Captured: " + str(Server.numCaptured)
-        print("disp_info_GUI Placeholder")
         
         self.GUI_Label2.config(text = self.label_text2)
         self.GUI_Label3.config(text = self.label_text3)
@@ -452,7 +453,6 @@ class Server_Gui:
             #this uses recursion
         update_func()
         
-        
     def processIncoming(self):
         """Handle all messages currently in the queue, if any."""
         #print("Server.recv_queue.qsize() is: ", Server.recv_queue.qsize())
@@ -470,6 +470,10 @@ class Server_Gui:
                 print("Printing my message", self.client_moved_piece)
                 print("Printing my message", self.client_new_piece_coord)
                 print("Printing my message", self.client_removed_pieces)
+                self.movepiece(self.client_moved_piece, 7 - self.client_new_piece_coord[0], 7 - self.client_new_piece_coord[1])
+                if(len(self.client_removed_pieces)>0):
+                    for i in range(len(self.client_removed_pieces)):
+                        self.removepiece(self.client_removed_pieces[i])
                 self.GUI_Label2.config(text=self.client_moved_piece)
             except recv_queue.Empty:
                 # just on general principles, although we don't
@@ -493,7 +497,7 @@ class Server:
 
 
     def __init__(self):
-        Server.checkerboard = [[], [], [], [], [], [], [], []] #{} we want class variable not instance variable! Can define above
+        
         Server.numCaptured = 0
         Server.numRemaining = 12
         Server.turn_count = 1
@@ -515,31 +519,16 @@ class Server:
         # | s o s o s o s o
         
         # a sublist has [piece number, its x coord, its y coord]
+        # also note this initialization is done in GUI side
         Server.coordArrayX = [["piece1",0,1],["piece2",0,3],["piece3",0,5],["piece4",0,7], 
                         ["piece5",1,0], ["piece6",1,2], ["piece7",1,4], ["piece8",1,6],
                         ["piece9",2,1],["piece10",2,3],["piece11",2,5],["piece12",2,7]]
         Server.coordArrayO = [["piece13",5,0],["piece14",5,2],["piece15",5,4],["piece16",5,6], 
                         ["piece17",6,1], ["piece18",6,3], ["piece19",6,5], ["piece20",6,7],
                         ["piece21",7,0],["piece22",7,2],["piece23",7,4],["piece24",7,6]]
-        init_coordArrayX = {(0,1),(0,3),(0,5),(0,7), 
-                        (1,0), (1,2), (1,4), (1,6),
-                        (2,1),(2,3),(2,5),(2,7)}
-        init_coordArrayO = {(5,0),(5,2),(5,4),(5,6), 
-                        (6,1), (6,3), (6,5), (6,7),
-                        (7,0),(7,2),(7,4),(7,6)}
+
                         
-        for row in range(8):
-            for col in range(8):
-                Server.checkerboard[row].append('s')
-                
-        for row in range(8):
-            for col in range(8):
-                if((row,col) in init_coordArrayX):
-                    Server.checkerboard[row][col] = 'x'
-                elif((row,col) in init_coordArrayO):
-                    Server.checkerboard[row][col] = 'o'
-                else:
-                    Server.checkerboard[row][col] = 's'
+
         #####################################################
  
     def setup_Gui(self):
@@ -796,6 +785,8 @@ class Client_Gui:
         print("Populated pieces, pieceCounter at end is: "+ str(pieceCounter))
         self.placepiece(blackpiece, 0, 0)
         self.placepiece(redpiece, 0, 0)
+        
+      
 
     def placepiece(self, name, row, column): #this does not do what you think it does, magically makes everything appear
         '''Place a piece at the given row/column'''
@@ -803,15 +794,19 @@ class Client_Gui:
         x0 = (column * self.size) + int(self.size/2)
         y0 = (row * self.size) + int(self.size/2)
         self.canvas.coords(name, x0, y0)
-        print("coordinates x0 and y0: ", x0, y0)       
+        #print("coordinates x0 and y0: ", x0, y0)       
 
     def removepiece(self, name):
-        #just remove from board
-        print("Placeholder")
-        oldCoordX = 5
-        oldCoordY = 5
+        #completely remove from board/game
         Client.numCaptured = Client.numCaptured + 1
-        self.canvas.gettags(name)
+        i = 0
+        for sublist in Client.coordArrayO:
+            if(sublist[0]==name):
+                del Client.coordArrayO[i]
+            i = i + 1
+        #print("removepiece() ", name, " from game")
+        self.canvas.delete(name)
+        #self.canvas.gettags(name)
 
     def movepiece(self, name, destRow, destCol): 
         #remove and place aka move piece
@@ -827,39 +822,48 @@ class Client_Gui:
         myList = self.canvas.gettags(name)
         #find current location in the board
         for sublist in Client.coordArrayX:
+            print(sublist[0])
             if(sublist[0]==name):
+                print("Match in Server.coordArrayX")
                 oldCoordX = sublist[1]
                 oldCoordY = sublist[2]
+                sublist[1] = destRow
+                sublist[2] = destCol
+                break
         for sublist in Client.coordArrayO:
+            print(sublist[0])
             if(sublist[0]==name):
+                print("Match in Server.coordArrayO")
                 oldCoordX = sublist[1]
                 oldCoordY = sublist[2]
-        print(oldCoordX)
-        print(oldCoordY)
+                sublist[1] = destRow
+                sublist[2] = destCol
+                break
+                
+        # print("old coordinates are: ", oldCoordX, oldCoordY) 
+        # print("new coordinates are: ", sublist[1], sublist[2])
+        # print("Client.coordArrayX is: ", Client.coordArrayX)
+        # print("Client.coordArrayO is: ", Client.coordArrayO)               
+
         image_name = myList[1][0:-3]
-        print("image_name is", image_name)
+        # print("image_name is", image_name)
         tag_name1 = myList[0]
         tag_name2 = myList[1]
         image_name = image_name + ".gif"
-        print(image_name)
-        print(tag_name1)
-        print(tag_name2)
+        # print(image_name)
+        # print(tag_name1)
+        # print(tag_name2)
         image_name = tk.PhotoImage(file=image_name) #blackpiece, technically can just hard code it
         #Remove piece
-        print("name is:" + name)
+        #print("name is:" + name)
         self.canvas.delete(name)
         xCoord = (destCol * self.size) + int(self.size/2)
         yCoord = (destRow * self.size) + int(self.size/2)
-        print("xCoord, yCoord", xCoord, yCoord)
+        #print("xCoord, yCoord", xCoord, yCoord)
         self.canvas.create_image(xCoord,yCoord,image=image_name, tags=(tag_name1, tag_name2),anchor="c")
         self.placepiece(image_name, 0, 0)
         
-        #Data Struct Portion of movepiece (backend)
-        Client.checkerboard[oldCoordX][oldCoordY] = 's'
-        if(tag_name2 == "blackpiecetag"):
-            Client.checkerboard[destRow][destCol] = 'o'
-        elif(tag_name2 == "redpiecetag"):
-            Client.checkerboard[destRow][destCol] = 'x'
+      
             
     def enable_callback(self):
         self.canvas.bind("<Button-1>", self.client_game_callback)
@@ -867,42 +871,42 @@ class Client_Gui:
         
     def client_game_callback(self, event):
         #basically binding of the X pieces and its movement from GUI are handled
-        print("clicked at", event.x, event.y)
-        #if(Server.turn%2 == 1):
-        if(self.click_counter == 0):
-            #pick a black piece
-            self.old_x_coord = event.x
-            self.old_y_coord = event.y
-            #use self.compute_indices() to find the piece name
-            #self.old_O_piece_clicked = piece_name
-            my_index = self.compute_indices(event.x, event.y)
-            print("my_index is: "+str(my_index[0])+" " + str(my_index[1]))
-            for my_piece_X in range(len(Client.coordArrayX)):
-                if(my_index[0] == Client.coordArrayX[my_piece_X][1]):
-                    if(my_index[1] == Client.coordArrayX[my_piece_X][2]):
-                        self.old_X_piece_clicked = Client.coordArrayX[my_piece_X][0]
-            self.click_counter = 1
-            return
-        if(self.click_counter == 1):
-            self.click_counter = 0
-            #use self.old_x_coord and self.old_y_coord
-            #to determine piece name
-            #self.movepiece(name, destRow, destCol)
-            my_old_index = self.compute_indices(self.old_x_coord, self.old_y_coord) 
-            my_index = self.compute_indices(event.x, event.y)
-            #validate the red piece movement here
-            if((my_index[0] == my_old_index[0] - 1) or (my_index[0] == my_old_index[0] + 1)):
-                if((my_index[1] == my_old_index[1] + 1)):
-                    self.movepiece(self.old_X_piece_clicked, my_index[0], my_index[1])
-                    self.update_info_GUI()
-                    #Server.numCaptured = Server.numCaptured + 1
-                    Client_Gui.msg_to_send = [self.old_X_piece_clicked, [my_index[0], my_index[1]], []]
-                    Client_Gui.send_msg_flag = 1
-                    #Python Queue class are synchronized so we can
-                    #"put" from any threads and it will be synchronized
-                    Client.send_queue.put(Client_Gui.msg_to_send)
-                    print("Contents in the queue:", Client.send_queue.qsize())
-            return
+        #print("clicked at", event.x, event.y)
+        if(Client.turn_count%2 == 0):
+            if(self.click_counter == 0):
+                #pick a black piece
+                self.old_x_coord = event.x
+                self.old_y_coord = event.y
+                #use self.compute_indices() to find the piece name
+                #self.old_O_piece_clicked = piece_name
+                my_index = self.compute_indices(event.x, event.y)
+                print("my_index is: "+str(my_index[0])+" " + str(my_index[1]))
+                for my_piece_X in range(len(Client.coordArrayX)):
+                    if(my_index[0] == Client.coordArrayX[my_piece_X][1]):
+                        if(my_index[1] == Client.coordArrayX[my_piece_X][2]):
+                            self.old_X_piece_clicked = Client.coordArrayX[my_piece_X][0]
+                self.click_counter = 1
+                return
+            if(self.click_counter == 1):
+                self.click_counter = 0
+                #use self.old_x_coord and self.old_y_coord
+                #to determine piece name
+                #self.movepiece(name, destRow, destCol)
+                my_old_index = self.compute_indices(self.old_x_coord, self.old_y_coord) 
+                my_index = self.compute_indices(event.x, event.y)
+                #validate the red piece movement here
+                if((my_index[0] == my_old_index[0] - 1) or (my_index[0] == my_old_index[0] + 1)):
+                    if((my_index[1] == my_old_index[1] + 1)):
+                        self.movepiece(self.old_X_piece_clicked, my_index[0], my_index[1])
+                        self.update_info_GUI()
+                        #Server.numCaptured = Server.numCaptured + 1
+                        Client_Gui.msg_to_send = [self.old_X_piece_clicked, [my_index[0], my_index[1]], []]
+                        Client_Gui.send_msg_flag = 1
+                        #Python Queue class are synchronized so we can
+                        #"put" from any threads and it will be synchronized
+                        Client.send_queue.put(Client_Gui.msg_to_send)
+                        print("Contents in the queue:", Client.send_queue.qsize())
+                return
             
     def game_on(self):
         self.click_counter = 0
@@ -1080,7 +1084,6 @@ class Client_Gui:
     def update_info_GUI(self):
         self.label_text2 = "Turn Counter: " + str(Client.turn_count)
         self.label_text3 = "Num Pieces Captured: " + str(Client.numCaptured)
-        print("disp_info_GUI Placeholder")
         
         self.GUI_Label2.config(text = self.label_text2)
         self.GUI_Label3.config(text = self.label_text3)
@@ -1106,6 +1109,7 @@ class Client_Gui:
             label.after(1100, update_func) #after 1 sec or 1000 ms
             #this uses recursion
         update_func()        
+
         
     def processIncoming(self):
         """Handle all messages currently in the queue, if any."""
@@ -1124,8 +1128,11 @@ class Client_Gui:
                 print("Printing my message", self.server_moved_piece)
                 print("Printing my message", self.server_new_piece_coord)
                 print("Printing my message", self.server_removed_pieces)
+                self.movepiece(self.server_moved_piece, 7 - self.server_new_piece_coord[0], 7 - self.server_new_piece_coord[1])
+                if(len(self.server_removed_pieces)>0):
+                    for i in range(len(self.server_removed_pieces)):
+                        self.removepiece(self.server_removed_pieces[i])                
                 self.GUI_Label2.config(text=self.server_moved_piece)
-                print("Printing my byte object message", msg)
                 self.GUI_Label2.config(text=msg)
             except recv_queue.Empty:
                 # just on general principles, although we don't
@@ -1147,7 +1154,7 @@ class Client:
     RECV_BUFFER_SIZE = 1024
 
     def __init__(self):
-        Client.checkerboard = [[], [], [], [], [], [], [], []] #{} we want class variable not instance variable! Can define above
+        
         Client.numCaptured = 0
         Client.numRemaining = 12
         Client.turn_count = 1
@@ -1168,34 +1175,14 @@ class Client:
         # | o s o s o s o s
         # | s o s o s o s o
         # *** Note we will need to flip what is seen from client side on GUI
+        # also note this initialization is done in GUI side        
         Client.coordArrayX = [["piece12",5,0],["piece11",5,2],["piece10",5,4],["piece9",5,6], 
                         ["piece8",6,1], ["piece7",6,3], ["piece6",6,5], ["piece5",6,7],
                         ["piece4",7,0],["piece3",7,2],["piece2",7,4],["piece1",7,6]]
         Client.coordArrayO = [["piece24",0,1],["piece23",0,3],["piece22",0,5],["piece21",0,7], 
                         ["piece20",1,0], ["piece19",1,2], ["piece18",1,4], ["piece17",1,6],
                         ["piece16",2,1],["piece15",2,3],["piece14",2,5],["piece13",2,7]]
-        init_coordArrayX = {(5,0),(5,2),(5,4),(5,6), 
-                        (6,1), (6,3), (6,5), (6,7),
-                        (7,0),(7,2),(7,4),(7,6)}
-        init_coordArrayO = {(0,1),(0,3),(0,5),(0,7), 
-                        (1,0), (1,2), (1,4), (1,6),
-                        (2,1),(2,3),(2,5),(2,7)}                        
-                        
-                        
 
-
-        for row in range(8):
-            for col in range(8):
-                Client.checkerboard[row].append('s')
-                
-        for row in range(8):
-            for col in range(8):
-                if((row,col) in init_coordArrayX):
-                    Client.checkerboard[row][col] = 'x'
-                elif((row,col) in init_coordArrayO):
-                    Client.checkerboard[row][col] = 'o'
-                else:
-                    Client.checkerboard[row][col] = 's'                        
         #####################################################
 
     def setup_Gui(self):
@@ -1266,15 +1253,9 @@ class Client:
                 self.socket.close()
                 sys.exit(1)
                 
-
-
-
-
-
     def connection_handler(self, connection):
         while True:
             if(Client.send_queue.qsize()): #aka Client_Queue... for sending
-                # elif(Client_Gui.send_msg_flag == 1): #sending
                 #Here we want to send the checker data
                 print("Sending Client Data to Server!")
                 #msg should be the game data that you want to send to the server gui!!!!!
@@ -1289,16 +1270,15 @@ class Client:
                 print("Sent: ", data_to_send)
                 print("Contents in the queue: ", Client.send_queue.qsize())
                 Client.turn_count = Client.turn_count + 1
-            #elif(len(connection.recv(1024))>0): #this socket made to be non-blocking, it polls then skips
             elif((Client.turn_count)%2==1): # even turns are for client
+                #this socket made to be non-blocking, it polls then skips
                 print("we are fucking cock blockeddd!!!!!!!!! xDDDDDDDDDD")
                 pickled_data = connection.recv(1024)
                 Client.recv_queue.put(pickled_data)
                 print("Size of Client.recv_queue is: ", Client.recv_queue.qsize())
                 Client.turn_count = Client.turn_count + 1
 
-            
-            
+                
     def client_thread(self):
         #We will handle our asynchronous I/O of socket communication here.
         self.get_socket()
@@ -1306,8 +1286,6 @@ class Client:
         while self.running:
             #insert socket comm here
             self.send_server_output_forever()
-            #msg should be the game data that you want to send to the server!!!!!
-            #self.queue.put(msg)
         
     def endGame(self):
         print("Ending Game")
