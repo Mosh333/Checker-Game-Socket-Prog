@@ -119,7 +119,7 @@ class Server_Gui:
         #self.movepiece("piece2", 7, 7)
         #self.movepiece("piece13", 0, 3)
         #self.canvas.create_image(300,300, image=blackpiece, tags=("piece2", "blackpiecetag"),anchor="c")
-        self.removepiece("piece5")
+        #self.removepiece("piece5")
         
                 
     def placepiece(self, name, row, column): #this does not do what you think it does, magically makes everything appear
@@ -201,8 +201,130 @@ class Server_Gui:
 
 
     def enable_callback(self):
-        self.canvas.bind("<Button-1>", self.server_game_callback)
-        self.canvas.bind("<Button-3>", self.server_game_callback)
+        self.canvas.bind("<Button-1>", self.server_game_callback) #left-click
+        self.canvas.bind("<Button-3>", self.server_game_callback) #right-click
+    
+    def do_valid_move(self, name, my_index, my_old_index):
+        #checks if there is a valid move
+        #if there is a valid move, it performs that valid piece move (it will do best valid move)
+        #along with any necessary bookkeeping
+        #if there is not valid move, do not do anything
+        #note max hop num or recursion depth is 3,
+        #so we can just LUT it or elegant recursion it
+        #obv im gonna just LUT (look-up table) it
+        
+        Server.pieces_to_remove = []
+        index_x_pointer = my_old_index[0] #7
+        index_y_pointer = my_old_index[1] #7
+        my_dest = []
+        my_dest.append(my_index[0])
+        my_dest.append(my_index[1])
+        my_name = self.canvas.gettags(name)
+        numIter = 0
+        
+        
+        for i in #myList = self.canvas.gettags(name)
+        if(my_name[1] == "blackpiecetag"):
+            # if(my_old_index[1] < 2):
+                # numIter = 1
+            # elif(my_old_index[1] < 4):
+                # numIter = 2
+            # elif(my_old_index[1] < 6):
+                # numIter = 3
+            # elif(my_old_index[1] < 8):
+                # numIter = 4
+            # for i in range(numIter):
+                
+                #loop and append all the pieces to remove
+            if(self.find_neighbour_piece_X(my_old_index) != 0): #there is a neighbour black piece
+                piece_X_location = self.find_neighbour_piece_X(my_old_index)
+                if(my_old_index[0] > piece_X_location[0]): #traverse more right
+                    #and past that is empty, and is a diagonal space
+                    if(self.check_if_vacant(my_dest) and ((my_dest[0] == piece_X_location[0] - 1) or (my_dest[0] == piece_X_location[0] + 1))):
+                        Server.pieces_to_remove.append(self.return_piece_name(piece_X_location))
+                        index_x_pointer = my_dest[0]
+                        index_y_pointer = my_dest[1] #or maybe my_dest[1], find which one is better
+                        if(index_y_pointer < 2) break
+                        elif(self.find_neighbour_piece_X((my_dest[0],my_dest[1]) != 0):
+                        if(
+                        my_dest[0] = ###
+                        my_dest[1] = my_dest[1] - 2
+                        
+                        
+                        
+                        
+                elif(my_old_index[0] < piece_X_location[0]): #traverse more left
+                
+                    if(self.check_if_vacant(my_dest)): #and past that is empty, 
+                        if((piece_X_location[1]-1 == my_index)):
+                            if((piece_X_location[0] ==)):
+                                index_x_pointer
+                            elif((piece_X_location[0] ==)):
+                            
+                        
+                            
+                elif #two consecutive pieces, break and return the index pointer location to be final dest.
+                    return (index_x_pointer, index_y_pointer)
+                    break
+                #decrement y pointer by 2, and increment/decrement x pointer by 2
+            
+        elif(my_name[1] == "blackkingtag"):
+            print("Placeholder")
+        
+        if(len(pieces_to_remove)==0): #after search and return size 0, move pieces to be conquered
+            self.movepiece(my_index[0],my_index[1])
+        #check if the desired location to move to is vacant
+        #else if no pieces to conquer, just jump one space
+        if((my_index[0] == my_old_index[0] - 1) or (my_index[0] == my_old_index[0] + 1)):
+            if((my_index[1] == my_old_index[1] + 1)):
+                if(self.check_if_vacant(my_index)):
+                    self.movepiece(my_index[0],my_index[1])
+                    
+                    
+        if(dest[1]==0):
+            #replace it with king piece instead
+            Server.
+    
+    def find_neighbour_piece_X(self, my_index):
+        index = []
+        
+        for my_piece_X in range(len(Server.coordArrayX)):
+            if((my_index[1]-1) == Server.coordArrayX[my_piece_X][2]):
+                if(my_index[0]-1 = Server.coordArrayX[my_piece_X][1]):
+                    index.append(my_index[0]-1)
+                    index.append(my_index[1]-1)
+                elif(my_index[0]+1 = Server.coordArrayX[my_piece_X][1]):
+                    index.append(my_index[0]+1)
+                    index.append(my_index[1]-1)                    
+        if(len(index)==0):
+            return 0
+        return index
+    def find_neighbour_piece_X_king(self, my_index):
+        
+        
+        
+        return 0
+    
+    def return_piece_name(self, my_index):
+        for i in range(len(Server.coordArrayX)):
+            if((my_index[0]) == Server.coordArrayX[my_piece_X][1]):
+                if(my_index[1] = Server.coordArrayX[my_piece_X][2]):
+                    return Server.coordArrayX[my_piece_X][0]
+        
+    def check_if_vacant(self, my_index):
+        vacant_flag = 1
+        for my_piece_O in range(len(Server.coordArrayO)):
+            if(my_index[0] = Server.coordArrayO[my_piece_O][1]):
+                if(my_index[1] == Server.coordArrayO[my_piece_O][2]):
+                    vacant_flag = 0
+                    return vacant_flag
+                    
+        for my_piece_X in range(len(Server.coordArrayX)):
+            if(my_index[0] = Server.coordArrayX[my_piece_X][1]):
+                if(my_index[1] == Server.coordArrayX[my_piece_X][2]):
+                    vacant_flag = 0
+                    return vacant_flag    
+        return vacant_flag
         
     def server_game_callback(self, event):
         #basically binding of the O pieces and its movement from GUI are handled
@@ -226,22 +348,28 @@ class Server_Gui:
                 #use self.old_x_coord and self.old_y_coord
                 #to determine piece name
                 #self.movepiece(name, destRow, destCol)
+                
                 my_old_index = self.compute_indices(self.old_x_coord, self.old_y_coord) 
                 my_index = self.compute_indices(event.x, event.y)
+                
+                
                 #validate the red piece movement here
-                if((my_index[0] == my_old_index[0] - 1) or (my_index[0] == my_old_index[0] + 1)):
-                    if((my_index[1] == my_old_index[1] + 1)):
-                        self.movepiece(self.old_O_piece_clicked, my_index[0], my_index[1])
-                        self.update_info_GUI()
-                        #Server.numCaptured = Server.numCaptured + 1
-                        Server_Gui.msg_to_send = [self.old_O_piece_clicked, [my_index[0], my_index[1]], []]
-                        Server_Gui.send_msg_flag = 1
-                        #Python Queue class are synchronized so we can
-                        #"put" from any threads and it will be synchronized
-                        #Server. or Server_Gui. Server_Queue.put(Server_Gui.msg_to_send)
-                        Server.send_queue.put(Server_Gui.msg_to_send)
-                        #Server.send_queue.join() This means that the queue is never being emptied
-                        print("Contents in the queue:", Server.send_queue.qsize())
+                # if((my_index[0] == my_old_index[0] - 1) or (my_index[0] == my_old_index[0] + 1)):
+                    # if((my_index[1] == my_old_index[1] + 1)):
+                    
+                my_index = self.do_valid_move(self.old_O_piece_clicked, my_index, my_old_index)
+                #self.movepiece(self.old_O_piece_clicked, my_index[0], my_index[1])
+                self.update_info_GUI()
+                
+                
+                Server_Gui.msg_to_send = [self.old_O_piece_clicked, [my_index[0], my_index[1]], Server.pieces_to_remove]
+                #Python Queue class are synchronized so we can
+                #"put" from any threads and it will be synchronized
+                #Server. or Server_Gui. Server_Queue.put(Server_Gui.msg_to_send)
+                Server.send_queue.put(Server_Gui.msg_to_send)
+                #Server.send_queue.join() This means that the queue is never being emptied
+                print("Contents in the queue:", Server.send_queue.qsize())
+                        
                 return
 
             
@@ -866,8 +994,8 @@ class Client_Gui:
       
             
     def enable_callback(self):
-        self.canvas.bind("<Button-1>", self.client_game_callback)
-        self.canvas.bind("<Button-3>", self.client_game_callback)
+        self.canvas.bind("<Button-1>", self.client_game_callback) #left-click
+        self.canvas.bind("<Button-3>", self.client_game_callback) #right-click
         
     def client_game_callback(self, event):
         #basically binding of the X pieces and its movement from GUI are handled
