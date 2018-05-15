@@ -27,8 +27,9 @@ import functools
 ########################################################################
 class Server_Gui:
     def __init__(self, master, recv_queue, send_queue, endCommand):
-        Server_Gui.send_msg_flag = 0
         Server_Gui.msg_to_send = []
+        Server_Gui.selected_piece = ""
+        Server_Gui.moveflag = 0
         self.recv_queue = recv_queue
         
         self.master = master
@@ -45,7 +46,6 @@ class Server_Gui:
         self.one_sec_counter(self.TIMER_Label)
         # Add more GUI stuff here depending on your specific needs
     def init_board_GUI(self):
-        print("Placeholder")
         self.rows = 8
         self.columns = 8
         self.size = 40 #size is the size of a square, in pixels 40 x 40
@@ -128,17 +128,20 @@ class Server_Gui:
         x0 = (column * self.size) + int(self.size/2)
         y0 = (row * self.size) + int(self.size/2)
         self.canvas.coords(name, x0, y0)
-        #print("coordinates x0 and y0: ", x0, y0)
         
     def removepiece(self, name):
         #completely remove from board/game
-        Server.numCaptured = Server.numCaptured + 1
         i = 0
         for sublist in Server.coordArrayX:
             if(sublist[0]==name):
                 del Server.coordArrayX[i]
+                Server.numCaptured = Server.numCaptured + 1
             i = i + 1
-        #print("removepiece() ", name, " from game")
+        i = 0
+        for sublist in Server.coordArrayO:
+            if(sublist[0]==name):
+                del Server.coordArrayO[i]
+            i = i + 1
         self.canvas.delete(name)
         #self.canvas.gettags(name)
         
@@ -152,24 +155,19 @@ class Server_Gui:
         
         #GUI Portion of movepiece (frontend)
         #Store data
-        print("name is: "+name)
         myList = self.canvas.gettags(name)
         #find current location in the board
         #also find piece in Server.coordArrayO        
         #replace the coordinates for that piece
         for sublist in Server.coordArrayX:
-            print(sublist[0])
             if(sublist[0]==name):
-                print("Match in Server.coordArrayX")
                 oldCoordX = sublist[1]
                 oldCoordY = sublist[2]
                 sublist[1] = destRow
                 sublist[2] = destCol
                 break
         for sublist in Server.coordArrayO:
-            print(sublist[0])
             if(sublist[0]==name):
-                print("Match in Server.coordArrayO")
                 oldCoordX = sublist[1]
                 oldCoordY = sublist[2]
                 sublist[1] = destRow
@@ -197,6 +195,9 @@ class Server_Gui:
         #print("xCoord, yCoord", xCoord, yCoord)
         self.canvas.create_image(xCoord,yCoord,image=image_name, tags=(tag_name1, tag_name2),anchor="c")
         self.placepiece(image_name, 0, 0)
+        print("Server.coordArrayX is: ", Server.coordArrayX)
+        print("Server.coordArrayO is: ", Server.coordArrayO)          
+        print("Exit movepiece")        
         
 
 
@@ -204,145 +205,43 @@ class Server_Gui:
         self.canvas.bind("<Button-1>", self.server_game_callback) #left-click
         self.canvas.bind("<Button-3>", self.server_game_callback) #right-click
     
-    def do_valid_move(self, name, my_index, my_old_index):
-        #checks if there is a valid move
-        #if there is a valid move, it performs that valid piece move (it will do best valid move)
-        #along with any necessary bookkeeping
-        #if there is not valid move, do not do anything
-        #note max hop num or recursion depth is 3,
-        #so we can just LUT it or elegant recursion it
-        #obv im gonna just LUT (look-up table) it
-        
-        Server.pieces_to_remove = []
-        index_x_pointer = my_old_index[0] #7
-        index_y_pointer = my_old_index[1] #7
-        my_dest = []
-        my_dest.append(my_index[0])
-        my_dest.append(my_index[1])
-        my_name = self.canvas.gettags(name)
-        numIter = 0
-        
-        
-        for i in #myList = self.canvas.gettags(name)
-        if(my_name[1] == "blackpiecetag"):
-            # if(my_old_index[1] < 2):
-                # numIter = 1
-            # elif(my_old_index[1] < 4):
-                # numIter = 2
-            # elif(my_old_index[1] < 6):
-                # numIter = 3
-            # elif(my_old_index[1] < 8):
-                # numIter = 4
-            # for i in range(numIter):
-                
-                #loop and append all the pieces to remove
-            if(self.find_neighbour_piece_X(my_old_index) != 0): #there is a neighbour black piece
-                piece_X_location = self.find_neighbour_piece_X(my_old_index)
-                if(my_old_index[0] > piece_X_location[0]): #traverse more right
-                    #and past that is empty, and is a diagonal space
-                    if(self.check_if_vacant(my_dest) and ((my_dest[0] == piece_X_location[0] - 1) or (my_dest[0] == piece_X_location[0] + 1))):
-                        Server.pieces_to_remove.append(self.return_piece_name(piece_X_location))
-                        index_x_pointer = my_dest[0]
-                        index_y_pointer = my_dest[1] #or maybe my_dest[1], find which one is better
-                        if(index_y_pointer < 2) break
-                        elif(self.find_neighbour_piece_X((my_dest[0],my_dest[1]) != 0):
-                        if(
-                        my_dest[0] = ###
-                        my_dest[1] = my_dest[1] - 2
-                        
-                        
-                        
-                        
-                elif(my_old_index[0] < piece_X_location[0]): #traverse more left
-                
-                    if(self.check_if_vacant(my_dest)): #and past that is empty, 
-                        if((piece_X_location[1]-1 == my_index)):
-                            if((piece_X_location[0] ==)):
-                                index_x_pointer
-                            elif((piece_X_location[0] ==)):
-                            
-                        
-                            
-                elif #two consecutive pieces, break and return the index pointer location to be final dest.
-                    return (index_x_pointer, index_y_pointer)
-                    break
-                #decrement y pointer by 2, and increment/decrement x pointer by 2
-            
-        elif(my_name[1] == "blackkingtag"):
-            print("Placeholder")
-        
-        if(len(pieces_to_remove)==0): #after search and return size 0, move pieces to be conquered
-            self.movepiece(my_index[0],my_index[1])
-        #check if the desired location to move to is vacant
-        #else if no pieces to conquer, just jump one space
-        if((my_index[0] == my_old_index[0] - 1) or (my_index[0] == my_old_index[0] + 1)):
-            if((my_index[1] == my_old_index[1] + 1)):
-                if(self.check_if_vacant(my_index)):
-                    self.movepiece(my_index[0],my_index[1])
-                    
-                    
-        if(dest[1]==0):
-            #replace it with king piece instead
-            Server.
-    
-    def find_neighbour_piece_X(self, my_index):
-        index = []
-        
-        for my_piece_X in range(len(Server.coordArrayX)):
-            if((my_index[1]-1) == Server.coordArrayX[my_piece_X][2]):
-                if(my_index[0]-1 = Server.coordArrayX[my_piece_X][1]):
-                    index.append(my_index[0]-1)
-                    index.append(my_index[1]-1)
-                elif(my_index[0]+1 = Server.coordArrayX[my_piece_X][1]):
-                    index.append(my_index[0]+1)
-                    index.append(my_index[1]-1)                    
-        if(len(index)==0):
-            return 0
-        return index
-    def find_neighbour_piece_X_king(self, my_index):
-        
-        
-        
-        return 0
-    
-    def return_piece_name(self, my_index):
-        for i in range(len(Server.coordArrayX)):
-            if((my_index[0]) == Server.coordArrayX[my_piece_X][1]):
-                if(my_index[1] = Server.coordArrayX[my_piece_X][2]):
-                    return Server.coordArrayX[my_piece_X][0]
-        
-    def check_if_vacant(self, my_index):
-        vacant_flag = 1
-        for my_piece_O in range(len(Server.coordArrayO)):
-            if(my_index[0] = Server.coordArrayO[my_piece_O][1]):
-                if(my_index[1] == Server.coordArrayO[my_piece_O][2]):
-                    vacant_flag = 0
-                    return vacant_flag
-                    
-        for my_piece_X in range(len(Server.coordArrayX)):
-            if(my_index[0] = Server.coordArrayX[my_piece_X][1]):
-                if(my_index[1] == Server.coordArrayX[my_piece_X][2]):
-                    vacant_flag = 0
-                    return vacant_flag    
-        return vacant_flag
+
         
     def server_game_callback(self, event):
         #basically binding of the O pieces and its movement from GUI are handled
         #print("clicked at", event.x, event.y)
         if((Server.turn_count)%2==1):
             if(self.click_counter == 0):
-                #pick a red piece
-                self.old_x_coord = event.x
-                self.old_y_coord = event.y
-                #use self.compute_indices() to find the piece name
-                #self.old_O_piece_clicked = piece_name
-                my_index = self.compute_indices(event.x, event.y)
-                for my_piece_O in range(len(Server.coordArrayO)):
-                    if(my_index[0] == Server.coordArrayO[my_piece_O][1]):
-                        if(my_index[1] == Server.coordArrayO[my_piece_O][2]):
-                            self.old_O_piece_clicked = Server.coordArrayO[my_piece_O][0]
-                self.click_counter = 1
-                return
+                if(Server_Gui.selected_piece == ""):
+                    #pick a red piece
+                    self.old_x_coord = event.x
+                    self.old_y_coord = event.y
+                    #use self.compute_indices() to find the piece name
+                    #self.old_O_piece_clicked = piece_name
+                    my_index = self.compute_indices(event.x, event.y)
+                    for my_piece_O in range(len(Server.coordArrayO)):
+                        if(my_index[0] == Server.coordArrayO[my_piece_O][1]):
+                            if(my_index[1] == Server.coordArrayO[my_piece_O][2]):
+                                self.old_O_piece_clicked = Server.coordArrayO[my_piece_O][0]
+                                Server_Gui.selected_piece = Server.coordArrayO[my_piece_O][0]
+                    self.click_counter = 1
+                    return
+                else:
+                    #make sure the clicked piece is the same piece as Server_Gui.selected_piece
+                    #if doing multiple hops
+                    self.old_x_coord = event.x
+                    self.old_y_coord = event.y
+                    #use self.compute_indices() to find the piece name
+                    #self.old_O_piece_clicked = piece_name
+                    my_index = self.compute_indices(event.x, event.y)
+                    for my_piece_O in range(len(Server.coordArrayO)):
+                        if(Server_Gui.selected_piece == Server.coordArrayO[my_piece_O][0]): #user smart
+                           self.click_counter = 1
+                           return
+                        else:                                                               #user dumb
+                           return
+
+                                
             if(self.click_counter == 1):
                 self.click_counter = 0
                 #use self.old_x_coord and self.old_y_coord
@@ -350,30 +249,511 @@ class Server_Gui:
                 #self.movepiece(name, destRow, destCol)
                 
                 my_old_index = self.compute_indices(self.old_x_coord, self.old_y_coord) 
-                my_index = self.compute_indices(event.x, event.y)
+                my_index = self.compute_indices(event.x, event.y) #intention to move to
                 
                 
                 #validate the red piece movement here
-                # if((my_index[0] == my_old_index[0] - 1) or (my_index[0] == my_old_index[0] + 1)):
-                    # if((my_index[1] == my_old_index[1] + 1)):
-                    
-                my_index = self.do_valid_move(self.old_O_piece_clicked, my_index, my_old_index)
+                #print("self.check_valid_move(Server_Gui.selected_piece,my_index, my_old_index) is: ", self.check_valid_move(Server_Gui.selected_piece,my_index, my_old_index))
+                check_valid_move_result = self.check_valid_move(Server_Gui.selected_piece,my_index, my_old_index)
+                if(check_valid_move_result!=0):
+                    self.movepiece(Server_Gui.selected_piece, my_index[0], my_index[1])
+                    if(check_valid_move_result[0]=="hop"):
+                        print("Hoppity Hoppomus")
+                        print("my_index[0] my_index[1]: ", my_index)
+                        print(check_valid_move_result[1])
+                        Server.pieces_to_remove.append(self.return_piece_name(check_valid_move_result[1]))
+                        print(Server.coordArrayX)
+                        print(Server.pieces_to_remove)
+                        self.removepiece(self.return_piece_name(check_valid_move_result[1]))
+                    if(my_index[0] == 0):
+                        #delete the piece and replace with king piece
+                        print("Making king piece now!")
+                        myTags = self.canvas.gettags(Server_Gui.selected_piece)
+                        self.removepiece(Server_Gui.selected_piece)
+                        redking = tk.PhotoImage(file="redking.gif")
+                        col = my_index[1]
+                        row = my_index[0]
+                        xCoord = (col * self.size) + int(self.size/2)
+                        yCoord = (row * self.size) + int(self.size/2)
+                        #inherit same piece name but replace second tag with "redkingtag"
+                        self.canvas.create_image(xCoord,yCoord,image=redking, tags=(myTags[0], "redkingtag"),anchor="c")                        
+                        self.placepiece(redking, 0, 0)
+                        #store it in the data structure as well
+                    print("Before sending it off!")        
+                    if(self.has_valid_hops_left(Server_Gui.selected_piece, my_index, check_valid_move_result) == 0):
+                        print("Sending it off now!")    
+                        Server_Gui.moveflag = 1
                 #self.movepiece(self.old_O_piece_clicked, my_index[0], my_index[1])
-                self.update_info_GUI()
                 
-                
-                Server_Gui.msg_to_send = [self.old_O_piece_clicked, [my_index[0], my_index[1]], Server.pieces_to_remove]
-                #Python Queue class are synchronized so we can
-                #"put" from any threads and it will be synchronized
-                #Server. or Server_Gui. Server_Queue.put(Server_Gui.msg_to_send)
-                Server.send_queue.put(Server_Gui.msg_to_send)
-                #Server.send_queue.join() This means that the queue is never being emptied
-                print("Contents in the queue:", Server.send_queue.qsize())
-                        
+                # and Server_Gui.moveflag == 1
+                # if(self.has_valid_hops_left(Server_Gui.selected_piece) == 0 and Server_Gui.moveflag == 1)
+                #  self.check_valid_move(Server_Gui.selected_piece,my_index, my_old_index)==0
+                #once that piece can no longer move, send the data over to other side
+                if(Server_Gui.moveflag == 1):
+                    Server_Gui.moveflag = 0
+                    self.update_info_GUI()
+                    Server_Gui.msg_to_send = [Server_Gui.selected_piece, [my_index[0], my_index[1]], Server.pieces_to_remove]
+                    Server_Gui.selected_piece = ""
+                    Server.pieces_to_remove = []                    
+                    #Python Queue class are synchronized so we can
+                    #"put" from any threads and it will be synchronized
+                    #Server. or Server_Gui. Server_Queue.put(Server_Gui.msg_to_send)
+                    Server.send_queue.put(Server_Gui.msg_to_send)
+                    #Server.send_queue.join() This means that the queue is never being emptied
+                    print("Contents in the queue:", Server.send_queue.qsize())      
                 return
 
-            
+    def check_valid_move(self, name, my_index, my_old_index): #I think first half works
+        #checks if my_index is a valid move (as in if another hop is available), then return 1
+        #if there is no valid move return 0
+        #Algorithm:
+        #check if two diagonal space is full, if so hop is not possible for that path
+        #check if two diagonal space if empty and one diagonal space is appropriate piece, then return valid move
+        #else check if one space traversal is possible, if so return valid move
+        #else return 0
+        result = 0
+        list_of_possible_moves = [] #apply algorithm for max one hop length or one space traversal for that piece
+                                    #check if my_index is in this list of possible moves, if so return 1, else return 0
+        #print("Debugging check_valid_move")
+        #print("my_index is: ", my_index)
+        piece_type = self.return_piece_type(my_old_index)
+        #print("piece_type is: ", piece_type)
+        if(piece_type == "redpiece"): #regular piece
+            #print("In the if statement branch: ")
+            index_array = []
+            index_flag = []
+            #  x    x
+            #   x  x
+            #    ||
+            #print("x coord        , y_coord        : ")
+            #print("my_old_index[1], my_old_index[0]: ", my_old_index[1], my_old_index[0])
+            index0 = (my_old_index[1]-1, my_old_index[0]-1) #four possible moves for piece
+            index1 = (my_old_index[1]+1, my_old_index[0]-1) #note [1] is col or x coord
+            index2 = (my_old_index[1]-2, my_old_index[0]-2) #note [0] is row or y coord
+            index3 = (my_old_index[1]+2, my_old_index[0]-2)
+            index_array.append(index0)
+            index_array.append(index1)
+            index_array.append(index2)
+            index_array.append(index3)
+            #print("index_array is: ", index_array)
+            for i in range(0,4):
+                #set to be true until proven otherwise
+                index_flag.append(1) #respective index corresponds to valid more or not
+                
+            for i in range(0,4): #determine all the illegal moves here
+                #index out of bound
+                # if(index_array[i][0]<0 or index_array[i][0]>7 or index_array[i][1]<0 or index_array[i][1]>7):
+                    # index_flag[i] = 0
+                
+                if(i==0):                    #left side is ally piece
+                    #print("we are at i==0")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        if((self.return_piece_type(index_array[i]) == "redpiece") or (self.return_piece_type(index_array[i]) == "redking")):
+                            index_flag[i] = 0
+                            index_flag[i+2] = 0
+                    #left side is completely blocked
+                    if(self.check_if_vacant(index_array[i]) == 0 and self.check_if_vacant(index_array[i+2]) == 0):
+                        index_flag[i] = 0
+                        index_flag[i+2] = 0
+                    #print("index_flag is: ", index_flag)
+                
+                if(i==1):
+                    #print("we are at i==1")
+                    #right side is ally piece
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        #print("index_array[i] is: ", index_array[i])
+                        if((self.return_piece_type(index_array[i]) == "redpiece") or (self.return_piece_type(index_array[i]) == "redking")):
+                            #print("We get here xxxxxxxxxxxxx") #this branch is problem, why????
+                            index_flag[i] = 0
+                            index_flag[i+2] = 0
+                    #right side is completely blocked                        
+                    if(self.check_if_vacant(index_array[i]) == 0 and self.check_if_vacant(index_array[i+2]) == 0):
+                        #print("We get here yyyyyyyyyyyyyy")
+                        index_flag[i] = 0
+                        index_flag[i+2] = 0  
+                    #print("index_flag is: ", index_flag)
+                #left most side is not vacant
+                if(i==2):
+                    #print("we are at i==2")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0
+                    #print("index_flag is: ", index_flag)
+                #right most side is not vacant
+                if(i==3):
+                    #print("we are at i==3")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0                    
+                    #print("index_flag is: ", index_flag)
+                    
+            #print("index_flag is: ", index_flag)
+            #print("Expected index_flag is:  [1, 1, 0, 0]")
+            for i in range(0,4): #check all valid moves        
+                if(index_flag[i] == 1):
+                    list_of_possible_moves.append(index_array[i])
+                    if(index_array[i] == (my_index[1], my_index[0])): #is the requested move one of the valid moves?
+                        #and which move type?
+                        if(i<2):
+                            result = "move"
+                        if(i==2): #leftmost to center
+                            num1 = my_index[0]+1
+                            num2 = my_index[1]+1
+                            result = ("hop",(num1, num2)) #values which are index of piece to remove
+                        if(i==3): #rightmost to center
+                            num3 = my_index[0]+1
+                            num4 = my_index[1]-1
+                            result = ("hop",(num3, num4))                        
+            #print("my_index[0], my_index[1]: ", my_index[0], my_index[1])
+            #print("index_array: ", index_array)
+            #print("We made it to the end of check_valid_move()! ")
+            #print("result is: ", result)
+        elif(piece_type == "redking"): #king piece
+            index_array = []
+            index_flag = []
+            #  x    x
+            #   x  x
+            #    ||
+            #   x  x
+            #  x    x
+            #index 0 to 3 are upward moves wrt piece user
+            #index 4 to 7 are downword moves wrt piece user
+            index0 = (my_old_index[1]-1, my_old_index[0]-1) #eight possible moves for piece
+            index1 = (my_old_index[1]+1, my_old_index[0]-1)
+            index2 = (my_old_index[1]-2, my_old_index[0]-2)
+            index3 = (my_old_index[1]+2, my_old_index[0]-2)
+            index4 = (my_old_index[1]-1, my_old_index[0]+1)
+            index5 = (my_old_index[1]+1, my_old_index[0]+1)
+            index6 = (my_old_index[1]-2, my_old_index[0]+2)
+            index7 = (my_old_index[1]+2, my_old_index[0]+2) 
+            index_array.append(index0)
+            index_array.append(index1)
+            index_array.append(index2)
+            index_array.append(index3)
+            index_array.append(index4)
+            index_array.append(index5)
+            index_array.append(index6)
+            index_array.append(index7)
+            for i in range(0,7):
+                #set to be true until proven otherwise
+                index_flag.append(1) #respective index corresponds to valid more or not
+            for i in range(0,7):
+                if(i==0):                    #upward, left side is ally piece
+                    print("we are at i==0")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        if((self.return_piece_type(index_array[i]) == "redpiece") or (self.return_piece_type(index_array[i]) == "redking")):
+                            index_flag[i] = 0
+                            index_flag[i+2] = 0
+                    #left side is completely blocked
+                    if(self.check_if_vacant(index_array[i]) == 0 and self.check_if_vacant(index_array[i+2]) == 0):
+                        index_flag[i] = 0
+                        index_flag[i+2] = 0
+                    #print("index_flag is: ", index_flag)
+                if(i==1):                    #upward, right side is ally piece
+                    print("we are at i==1")
+                    #right side is ally piece
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        #print("index_array[i] is: ", index_array[i])
+                        if((self.return_piece_type(index_array[i]) == "redpiece") or (self.return_piece_type(index_array[i]) == "redking")):
+                            #print("We get here xxxxxxxxxxxxx") #this branch is problem, why????
+                            index_flag[i] = 0
+                            index_flag[i+2] = 0
+                    #right side is completely blocked                        
+                    if(self.check_if_vacant(index_array[i]) == 0 and self.check_if_vacant(index_array[i+2]) == 0):
+                        #print("We get here yyyyyyyyyyyyyy")
+                        index_flag[i] = 0
+                        index_flag[i+2] = 0  
+                    #print("index_flag is: ", index_flag)                    
+                if(i==2):                    #upward, left most side is not vacant
+                    print("we are at i==2")     
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0
+                    #print("index_flag is: ", index_flag)
+                if(i==3):                    #upward, right most side is not vacant
+                    print("we are at i==3")    
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0                    
+                    #print("index_flag is: ", index_flag)                    
+                if(i==4):                    #downward, left side is ally piece
+                    print("we are at i==4")     
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        if((self.return_piece_type(index_array[i]) == "redpiece") or (self.return_piece_type(index_array[i]) == "redking")):
+                            index_flag[i] = 0
+                            index_flag[i+2] = 0
+                    #left side is completely blocked
+                    if(self.check_if_vacant(index_array[i]) == 0 and self.check_if_vacant(index_array[i+2]) == 0):
+                        index_flag[i] = 0
+                        index_flag[i+2] = 0
+                    #print("index_flag is: ", index_flag)
+                if(i==5):                    #downward, right side is ally piece
+                    print("we are at i==5")
+                    #right side is ally piece
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        #print("index_array[i] is: ", index_array[i])
+                        if((self.return_piece_type(index_array[i]) == "redpiece") or (self.return_piece_type(index_array[i]) == "redking")):
+                            #print("We get here xxxxxxxxxxxxx") #this branch is problem, why????
+                            index_flag[i] = 0
+                            index_flag[i+2] = 0
+                    #right side is completely blocked                        
+                    if(self.check_if_vacant(index_array[i]) == 0 and self.check_if_vacant(index_array[i+2]) == 0):
+                        #print("We get here yyyyyyyyyyyyyy")
+                        index_flag[i] = 0
+                        index_flag[i+2] = 0  
+                    #print("index_flag is: ", index_flag)                     
+                if(i==6):                    #downward, left most side is not vacant
+                    print("we are at i==6")     
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0
+                    #print("index_flag is: ", index_flag)
+                if(i==7):                    #downward, right most side is not vacant
+                    print("we are at i==7")   
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0                    
+                    #print("index_flag is: ", index_flag)   
 
+            for i in range(0,8): #check all valid moves        
+                if(index_flag[i] == 1):
+                    list_of_possible_moves.append(index_array[i])
+                    if(index_array[i] == (my_index[1], my_index[0])): #is the requested move one of the valid moves?
+                        #and which move type?
+                        if(i==0 or i==1):
+                            result = "move"
+                        if(i==2): #leftmost to center
+                            num1 = my_index[0]+1
+                            num2 = my_index[1]+1
+                            result = ("hop",(num1, num2)) #values which are index of piece to remove
+                        if(i==3): #rightmost to center
+                            num1 = my_index[0]+1
+                            num2 = my_index[1]-1
+                            result = ("hop",(num1, num2))
+                        if(i==4 or i == 5):
+                            result = "move"
+                        if(i==6):
+                            num1 = my_index[0]-1
+                            num2 = my_index[1]+1
+                            result = ("hop",(num1, num2)) #values which are index of piece to remove
+                        if(i==7):
+                            num1 = my_index[0]-1
+                            num2 = my_index[1]-1
+                            result = ("hop",(num1, num2))
+        return result
+    
+    def has_valid_hops_left(self, name, my_index, prev_move_type):
+        #checks from the current location of the piece whether it has any valid hops left
+        #returns a boolean 0 or 1
+        print("has_valid_hops_left() current location: ", my_index)
+        result = 0
+        piece_type = self.return_piece_type(my_index)
+        if(piece_type == "redpiece"): #regular piece
+            index_array = []
+            index_flag = []
+            #  H    H
+            #   x  x
+            #    ||
+            #print("x coord        , y_coord        : ")
+            #print("my_index[1], my_index[0]: ", my_index[1], my_index[0])
+            index0 = (my_index[1]-1, my_index[0]-1) #four possible moves for piece
+            index1 = (my_index[1]+1, my_index[0]-1) #note [1] is col or x coord, note [0] is row or y coord
+            index2 = (my_index[1]-2, my_index[0]-2) #hop #1
+            index3 = (my_index[1]+2, my_index[0]-2) #hop #2
+            index_array.append(index0)
+            index_array.append(index1)
+            index_array.append(index2)
+            index_array.append(index3)
+            #print("index_array is: ", index_array)
+            for i in range(0,4):
+                #set to be true until proven otherwise
+                index_flag.append(1) #respective index corresponds to valid more or not            
+
+            for i in range(0,4): #determine all the illegal moves here
+                #index out of bound
+                # if(index_array[i][0]<0 or index_array[i][0]>7 or index_array[i][1]<0 or index_array[i][1]>7):
+                    # index_flag[i] = 0
+                
+                if(i==0):                    #left side is ally piece
+                    index_flag[i] = 0
+                if(i==1):
+                    index_flag[i] = 0
+                if(i==2):
+                    #print("we are at i==2")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0
+                    #print("index_flag is: ", index_flag)
+                #right most side is not vacant
+                if(i==3):
+                    #print("we are at i==3")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0                    
+                    #print("index_flag is: ", index_flag)
+                    
+            #print("index_flag is: ", index_flag)
+            #print("Expected index_flag is:  [1, 1, 0, 0]")
+            for i in range(0,4): #check all valid moves        
+                result = result + index_flag[i]                    
+            #print("my_index[0], my_index[1]: ", my_index[0], my_index[1])
+            #print("index_array: ", index_array)
+            #print("We made it to the end of has_valid_hops_left()! ")
+            if(prev_move_type=="move"):
+                result = 0
+            print("result is: ", result)
+
+        elif(piece_type == "redking"): #king piece
+            print("Placeholder")
+            index_array = []
+            index_flag = []
+            #  x    x
+            #   x  x
+            #    ||
+            #   x  x
+            #  x    x
+            index0 = (my_old_index[1]-1, my_old_index[0]-1) #four possible moves for piece
+            index1 = (my_old_index[1]+1, my_old_index[0]-1)
+            index2 = (my_old_index[1]-2, my_old_index[0]-2)
+            index3 = (my_old_index[1]+2, my_old_index[0]-2)
+            index4 = (my_old_index[1]-1, my_old_index[0]+1)
+            index5 = (my_old_index[1]+1, my_old_index[0]+1)
+            index6 = (my_old_index[1]-2, my_old_index[0]+2)
+            index7 = (my_old_index[1]+2, my_old_index[0]+2) 
+            index_array.append(index0)
+            index_array.append(index1)
+            index_array.append(index2)
+            index_array.append(index3)
+            index_array.append(index4)
+            index_array.append(index5)
+            index_array.append(index6)
+            index_array.append(index7)
+            
+            for i in range(0,7):
+                #set to be true until proven otherwise
+                index_flag.append(1) #respective index corresponds to valid more or not            
+
+            for i in range(0,7): #determine all the illegal moves here
+                #index out of bound
+                # if(index_array[i][0]<0 or index_array[i][0]>7 or index_array[i][1]<0 or index_array[i][1]>7):
+                    # index_flag[i] = 0
+                
+                if(i==0):                    #left side is ally piece
+                    index_flag[i] = 0
+                if(i==1):
+                    index_flag[i] = 0
+                if(i==2):   #upward, left most side is not vacant
+                    #print("we are at i==2")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0
+                    #print("index_flag is: ", index_flag)
+                #right most side is not vacant
+                if(i==3):   #upward, right most side is not vacant
+                    #print("we are at i==3")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0                    
+                    #print("index_flag is: ", index_flag)
+                if(i==4):
+                    index_flag[i] = 0
+                if(i==5):
+                    index_flag[i] = 0
+                if(i==6):   #downward, left most side is not vacant
+                    #print("we are at i==6")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0
+                    #print("index_flag is: ", index_flag)                
+                if(i==7):
+                    #print("we are at i==7")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0                    
+                    #print("index_flag is: ", index_flag)
+                    
+            #print("index_flag is: ", index_flag)
+            #print("Expected index_flag is:  [1, 1, 0, 0]")
+            for i in range(0,7): #check all valid moves        
+                result = result + index_flag[i]                    
+            #print("my_index[0], my_index[1]: ", my_index[0], my_index[1])
+            #print("index_array: ", index_array)
+            #print("We made it to the end of has_valid_hops_left()! ")            
+            if(prev_move_type=="move"):
+                result = 0            
+        return result
+        
+        
+    def return_piece_name(self, my_index):
+        #print("return_piece_name")
+        #print("my_index is: ", my_index)
+        result = "" #no piece exists
+        #print("my_index[0], my_index[1]", my_index[0], my_index[1])
+        for my_piece_O in range(len(Server.coordArrayO)):
+            if((my_index[0]) == Server.coordArrayO[my_piece_O][1]):
+                if(my_index[1] == Server.coordArrayO[my_piece_O][2]):
+                    result = Server.coordArrayO[my_piece_O][0]    #returns piece# like piece15
+                    #print("result is:", result)
+                    break
+        for my_piece_X in range(len(Server.coordArrayX)):
+            if((my_index[0]) == Server.coordArrayX[my_piece_X][1]):
+                if(my_index[1] == Server.coordArrayX[my_piece_X][2]):
+                    result = Server.coordArrayX[my_piece_X][0]    #returns piece# like piece4
+                    #print("result is:", result)
+                    break
+        return result
+                    
+    def return_piece_type(self, my_index):
+        #print("return_piece_type")
+        #print("my_index is: ", my_index)
+        name = self.return_piece_name(my_index)
+        temp = self.canvas.gettags(name)
+        
+        #print("temp is: ", temp)
+        #print("temp[1] is: ", temp[1])
+        result = "" #no piece exists
+        if(len(temp)==2):
+            if(temp[1] == "blackpiecetag"):
+                result = "blackpiece"
+            if(temp[1] == "redpiecetag"):
+                result = "redpiece"
+            if(temp[1] == "blackkingtag"):
+                result = "blackking"
+            if(temp[1] == "redkingtag"):
+                result = "redking"
+        
+        return result        
+        
+    def check_if_vacant(self, my_index):
+        vacant_flag = 1
+        #my_index[1] my_index[0] is row col
+        #print("my_index: ", my_index)
+        for my_piece_O in range(len(Server.coordArrayO)):
+            #print(Server.coordArrayO[my_piece_O][1], Server.coordArrayO[my_piece_O][2])
+            if(my_index[1] == Server.coordArrayO[my_piece_O][1]):
+                if(my_index[0] == Server.coordArrayO[my_piece_O][2]):
+                    vacant_flag = 0
+                    return vacant_flag
+                    
+        for my_piece_X in range(len(Server.coordArrayX)):
+            #print(Server.coordArrayX[my_piece_X][1], Server.coordArrayX[my_piece_X][2])
+            if(my_index[1] == Server.coordArrayX[my_piece_X][1]):
+                if(my_index[0] == Server.coordArrayX[my_piece_X][2]):
+                    vacant_flag = 0
+                    return vacant_flag    
+        return vacant_flag    
         
     def game_on(self):
         self.click_counter = 0
@@ -382,9 +762,24 @@ class Server_Gui:
         self.old_O_piece_clicked = ""
         self.enable_callback()
         #we want to bind player presses to the board and act accordingly
+    
+    #Alternatively
+    # def compute_indices(self, x_coord, y_coord):
+        # #given pixel values, return row and y  values as tuple
+        # x_val = 0
+        # y_val = 0
+        # for i in range(8, 0, -1):
+            # if(y_coord < 40*i):
+                # y_val = i
+            # if(x_coord < 40*i):
+                # x_val = i
         
+        # return(y_val, x_val)    
     def compute_indices(self, x_coord, y_coord):
-        #given pixel values, return row and y  values as tuple
+        #given pixel values, return y and x values as tuple
+        #unfortunately, it is more appropriate for make it a x and y tuple
+        #but due to functions that have (row, col) as parameter,
+        #we decided to match the order
         if(y_coord <40):
             if(x_coord <40):
                 return (0,0)
@@ -599,11 +994,28 @@ class Server_Gui:
                 print("Printing my message", self.client_new_piece_coord)
                 print("Printing my message", self.client_removed_pieces)
                 self.movepiece(self.client_moved_piece, 7 - self.client_new_piece_coord[0], 7 - self.client_new_piece_coord[1])
+                print("We are here")
                 if(len(self.client_removed_pieces)>0):
-                    for i in range(len(self.client_removed_pieces)):
-                        self.removepiece(self.client_removed_pieces[i])
+                    print("Trying to remove content")
+                    for piece_name in self.client_removed_pieces:
+                        self.removepiece(piece_name)
+                if(self.client_new_piece_coord[0] == 0):
+                    myTags = self.canvas.gettags(self.client_moved_piece)
+                    self.removepiece(self.client_moved_piece)                    
+                    print("Time to make a king piece!!!")                    
+                    blackking = tk.PhotoImage(file="blackking.gif")
+                    col = 7 - self.client_new_piece_coord[1]
+                    row = 7 - self.client_new_piece_coord[0]
+                    print("col row is: ", col, row)
+                    xCoord = (col * self.size) + int(self.size/2)
+                    yCoord = (row * self.size) + int(self.size/2)
+                    self.canvas.create_image(xCoord,yCoord,image=blackking, tags=(self.client_moved_piece, "blackkingtag"),anchor="c")
+                    self.placepiece(blackking, 0, 0)
+                print("Server.coordArrayX is: ", Server.coordArrayX)
+                print("Server.coordArrayO is: ", Server.coordArrayO)                
                 self.GUI_Label2.config(text=self.client_moved_piece)
-            except recv_queue.Empty:
+                print("Exitted processIncoming()")
+            except:
                 # just on general principles, although we don't
                 # expect this branch to be taken in this case
                 pass
@@ -629,6 +1041,7 @@ class Server:
         Server.numCaptured = 0
         Server.numRemaining = 12
         Server.turn_count = 1
+        Server.pieces_to_remove = []
         self.init_board()
         self.setup_Gui()
         
@@ -751,7 +1164,6 @@ class Server:
         connection, address_port = client
         print("-" * 72)
         print("Connection received from {}.".format(address_port))
-        print("Server_Gui.send_msg_flag is:", Server_Gui.send_msg_flag)
         while True:
             #print("In process_connections_forever()!!!")
             if(Server.send_queue.qsize()): #aka Server_queue
@@ -781,7 +1193,7 @@ class Server:
                 pickled_data = connection.recv(1024)
                 print("the unpickled data is: ", pickle.loads(pickled_data))
                 Server.recv_queue.put(pickled_data)
-                print("Size of Client.recv_queue is: ", Server.recv_queue.qsize())
+                print("Size of Server.recv_queue is: ", Server.recv_queue.qsize())
                 Server.turn_count = Server.turn_count + 1
                 #time.sleep(1) #delay for a bit so the system bookkeeping variable can sync up
                 #break #since we got the data break out forcefully, we can QA later and see if we do need this, we shouldnt i think
@@ -840,6 +1252,8 @@ class Client_Gui:
     def __init__(self, master, recv_queue, send_queue, endCommand):
         Client_Gui.send_msg_flag = 0
         Client_Gui.msg_to_send = []
+        Client_Gui.selected_piece = ""
+        Client_Gui.moveflag = 0
         self.recv_queue = recv_queue
         self.master = master
         self.endCommand = endCommand
@@ -926,11 +1340,16 @@ class Client_Gui:
 
     def removepiece(self, name):
         #completely remove from board/game
-        Client.numCaptured = Client.numCaptured + 1
+        i = 0
+        for sublist in Client.coordArrayX:
+            if(sublist[0]==name):
+                del Client.coordArrayX[i]
+            i = i + 1
         i = 0
         for sublist in Client.coordArrayO:
             if(sublist[0]==name):
                 del Client.coordArrayO[i]
+                Client.numCaptured = Client.numCaptured + 1                
             i = i + 1
         #print("removepiece() ", name, " from game")
         self.canvas.delete(name)
@@ -946,22 +1365,20 @@ class Client_Gui:
         
         #GUI Portion of movepiece (frontend)
         #Store data
-        print("name is: "+name)
+        #print("name is: "+name)
         myList = self.canvas.gettags(name)
         #find current location in the board
         for sublist in Client.coordArrayX:
-            print(sublist[0])
             if(sublist[0]==name):
-                print("Match in Server.coordArrayX")
+                print("Match in Client.coordArrayX")
                 oldCoordX = sublist[1]
                 oldCoordY = sublist[2]
                 sublist[1] = destRow
                 sublist[2] = destCol
                 break
         for sublist in Client.coordArrayO:
-            print(sublist[0])
             if(sublist[0]==name):
-                print("Match in Server.coordArrayO")
+                print("Match in Client.coordArrayO")
                 oldCoordX = sublist[1]
                 oldCoordY = sublist[2]
                 sublist[1] = destRow
@@ -990,7 +1407,9 @@ class Client_Gui:
         #print("xCoord, yCoord", xCoord, yCoord)
         self.canvas.create_image(xCoord,yCoord,image=image_name, tags=(tag_name1, tag_name2),anchor="c")
         self.placepiece(image_name, 0, 0)
-        
+        print("Client.coordArrayX is: ", Client.coordArrayX)
+        print("Client.coordArrayO is: ", Client.coordArrayO)
+        print("Exit movepiece")
       
             
     def enable_callback(self):
@@ -1002,40 +1421,543 @@ class Client_Gui:
         #print("clicked at", event.x, event.y)
         if(Client.turn_count%2 == 0):
             if(self.click_counter == 0):
-                #pick a black piece
-                self.old_x_coord = event.x
-                self.old_y_coord = event.y
-                #use self.compute_indices() to find the piece name
-                #self.old_O_piece_clicked = piece_name
-                my_index = self.compute_indices(event.x, event.y)
-                print("my_index is: "+str(my_index[0])+" " + str(my_index[1]))
-                for my_piece_X in range(len(Client.coordArrayX)):
-                    if(my_index[0] == Client.coordArrayX[my_piece_X][1]):
-                        if(my_index[1] == Client.coordArrayX[my_piece_X][2]):
-                            self.old_X_piece_clicked = Client.coordArrayX[my_piece_X][0]
-                self.click_counter = 1
-                return
+                if(Client_Gui.selected_piece == ""):
+                    #pick a black piece
+                    self.old_x_coord = event.x
+                    self.old_y_coord = event.y
+                    #use self.compute_indices() to find the piece name
+                    #self.old_O_piece_clicked = piece_name
+                    my_index = self.compute_indices(event.x, event.y)
+                    for my_piece_X in range(len(Client.coordArrayX)):
+                        if(my_index[0] == Client.coordArrayX[my_piece_X][1]):
+                            if(my_index[1] == Client.coordArrayX[my_piece_X][2]):
+                                self.old_X_piece_clicked = Client.coordArrayX[my_piece_X][0]
+                                Client_Gui.selected_piece = Client.coordArrayX[my_piece_X][0]
+                    self.click_counter = 1
+                    return
+                else:
+                    #make sure the clicked piece is the same piece as Client_Gui.selected_piece
+                    #if doing multiple hops
+                    self.old_x_coord = event.x
+                    self.old_y_coord = event.y
+                    #use self.compute_indices() to find the piece name
+                    #self.old_O_piece_clicked = piece_name
+                    my_index = self.compute_indices(event.x, event.y)
+                    for my_piece_X in range(len(Client.coordArrayX)):
+                        if(Client_Gui.selected_piece == Client.coordArrayX[my_piece_X][0]): #user smart
+                           self.click_counter = 1
+                           return
+                        else:                                                               #user dumb
+                           return                    
             if(self.click_counter == 1):
                 self.click_counter = 0
                 #use self.old_x_coord and self.old_y_coord
                 #to determine piece name
                 #self.movepiece(name, destRow, destCol)
+                
                 my_old_index = self.compute_indices(self.old_x_coord, self.old_y_coord) 
-                my_index = self.compute_indices(event.x, event.y)
+                my_index = self.compute_indices(event.x, event.y) #intention to move to
+                
+                
                 #validate the red piece movement here
-                if((my_index[0] == my_old_index[0] - 1) or (my_index[0] == my_old_index[0] + 1)):
-                    if((my_index[1] == my_old_index[1] + 1)):
-                        self.movepiece(self.old_X_piece_clicked, my_index[0], my_index[1])
-                        self.update_info_GUI()
-                        #Server.numCaptured = Server.numCaptured + 1
-                        Client_Gui.msg_to_send = [self.old_X_piece_clicked, [my_index[0], my_index[1]], []]
-                        Client_Gui.send_msg_flag = 1
-                        #Python Queue class are synchronized so we can
-                        #"put" from any threads and it will be synchronized
-                        Client.send_queue.put(Client_Gui.msg_to_send)
-                        print("Contents in the queue:", Client.send_queue.qsize())
+                #print("self.check_valid_move(Client_Gui.selected_piece,my_index, my_old_index) is: ", self.check_valid_move(Server_Gui.selected_piece,my_index, my_old_index))
+                check_valid_move_result = self.check_valid_move(Client_Gui.selected_piece,my_index, my_old_index)
+                if(check_valid_move_result!=0):
+                    self.movepiece(Client_Gui.selected_piece, my_index[0], my_index[1])
+                    if(check_valid_move_result[0]=="hop"):
+                        print("Hoppity Hoppomus")
+                        print("my_index[0] my_index[1]: ", my_index)
+                        print(check_valid_move_result[1])
+                        Client.pieces_to_remove.append(self.return_piece_name(check_valid_move_result[1]))
+                        print(Client.coordArrayX)
+                        print(Client.pieces_to_remove)
+                        self.removepiece(self.return_piece_name(check_valid_move_result[1]))
+                    if(my_index[0] == 0):
+                        #delete the piece and replace with king piece
+                        print("Making king now!!!!")
+                        myTags = self.canvas.gettags(Client_Gui.selected_piece)
+                        self.removepiece(Client_Gui.selected_piece)
+                        blackking = tk.PhotoImage(file="blackking.gif")
+                        col = my_index[1]
+                        row = my_index[0]
+                        xCoord = (col * self.size) + int(self.size/2)
+                        yCoord = (row * self.size) + int(self.size/2)
+                        #inherit same piece name but replace second tag with "blackkingtag"
+                        self.canvas.create_image(xCoord,yCoord,image=blackking, tags=(myTags[0], "blackkingtag"),anchor="c")                        
+                        self.placepiece(blackking, 0, 0)
+                        #store it in the data structure as well
+                    print("Before sending it off!")    
+                    if(self.has_valid_hops_left(Client_Gui.selected_piece, my_index, check_valid_move_result) == 0):
+                        print("Sending it off now!") 
+                        Client_Gui.moveflag = 1
+                #self.movepiece(self.old_O_piece_clicked, my_index[0], my_index[1])
+                
+                # and Client_Gui.moveflag == 1
+                # if(self.has_valid_hops_left(Client_Gui.selected_piece) == 0 and Client_Gui.moveflag == 1)
+                #  self.check_valid_move(Client_Gui.selected_piece,my_index, my_old_index)==0
+                #once that piece can no longer move, send the data over to other side
+                if(Client_Gui.moveflag == 1):
+                    Client_Gui.moveflag = 0
+                    self.update_info_GUI()
+                    Client_Gui.msg_to_send = [Client_Gui.selected_piece, [my_index[0], my_index[1]], Client.pieces_to_remove]
+                    Client_Gui.selected_piece = ""
+                    Client.pieces_to_remove = []                    
+                    #Python Queue class are synchronized so we can
+                    #"put" from any threads and it will be synchronized
+                    #Server. or Client_Gui. Server_Queue.put(Client_Gui.msg_to_send)
+                    Client.send_queue.put(Client_Gui.msg_to_send)
+                    #Client.send_queue.join() This means that the queue is never being emptied
+                    print("Contents in the queue:", Client.send_queue.qsize())      
                 return
+
+    def check_valid_move(self, name, my_index, my_old_index): #I think first half works
+        #checks if my_index is a valid move (as in if another hop is available), then return 1
+        #if there is no valid move return 0
+        #Algorithm:
+        #check if two diagonal space is full, if so hop is not possible for that path
+        #check if two diagonal space if empty and one diagonal space is appropriate piece, then return valid move
+        #else check if one space traversal is possible, if so return valid move
+        #else return 0
+        result = 0
+        list_of_possible_moves = [] #apply algorithm for max one hop length or one space traversal for that piece
+                                    #check if my_index is in this list of possible moves, if so return 1, else return 0
+        #print("Debugging check_valid_move")
+        #print("my_index is: ", my_index)
+        piece_type = self.return_piece_type(my_old_index)
+        #print("piece_type is: ", piece_type)
+        if(piece_type == "blackpiece"): #regular piece
+            #print("In the if statement branch: ")
+            index_array = []
+            index_flag = []
+            #  x    x
+            #   x  x
+            #    ||
+            #print("x coord        , y_coord        : ")
+            #print("my_old_index[1], my_old_index[0]: ", my_old_index[1], my_old_index[0])
+            index0 = (my_old_index[1]-1, my_old_index[0]-1) #four possible moves for piece
+            index1 = (my_old_index[1]+1, my_old_index[0]-1) #note [1] is col or x coord
+            index2 = (my_old_index[1]-2, my_old_index[0]-2) #note [0] is row or y coord
+            index3 = (my_old_index[1]+2, my_old_index[0]-2)
+            index_array.append(index0)
+            index_array.append(index1)
+            index_array.append(index2)
+            index_array.append(index3)
+            #print("index_array is: ", index_array)
+            for i in range(0,4):
+                #set to be true until proven otherwise
+                index_flag.append(1) #respective index corresponds to valid more or not
+                
+            for i in range(0,4): #determine all the illegal moves here
+                #index out of bound
+                if(index_array[i][0]<0 or index_array[i][0]>7 or index_array[i][1]<0 or index_array[i][1]>7):
+                    index_flag[i] = 0
+                
+                if(i==0):                    #left side is ally piece
+                    #print("we are at i==0")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        if((self.return_piece_type(index_array[i]) == "blackpiece") or (self.return_piece_type(index_array[i]) == "blackking")):
+                            index_flag[i] = 0
+                            index_flag[i+2] = 0
+                    #left side is completely blocked
+                    if(self.check_if_vacant(index_array[i]) == 0 and self.check_if_vacant(index_array[i+2]) == 0):
+                        index_flag[i] = 0
+                        index_flag[i+2] = 0
+                    #print("index_flag is: ", index_flag)
+                
+                if(i==1):
+                    #print("we are at i==1")
+                    #right side is ally piece
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        #print("index_array[i] is: ", index_array[i])
+                        if((self.return_piece_type(index_array[i]) == "blackpiece") or (self.return_piece_type(index_array[i]) == "blackking")):
+                            #print("We get here xxxxxxxxxxxxx") #this branch is problem, why????
+                            index_flag[i] = 0
+                            index_flag[i+2] = 0
+                    #right side is completely blocked                        
+                    if(self.check_if_vacant(index_array[i]) == 0 and self.check_if_vacant(index_array[i+2]) == 0):
+                        #print("We get here yyyyyyyyyyyyyy")
+                        index_flag[i] = 0
+                        index_flag[i+2] = 0  
+                    #print("index_flag is: ", index_flag)
+                #left most side is not vacant
+                if(i==2):
+                    #print("we are at i==2")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0
+                    #print("index_flag is: ", index_flag)
+                #right most side is not vacant
+                if(i==3):
+                    #print("we are at i==3")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0                    
+                    #print("index_flag is: ", index_flag)
+                    
+            #print("index_flag is: ", index_flag)
+            #print("Expected index_flag is:  [1, 1, 0, 0]")
+            for i in range(0,4): #check all valid moves        
+                if(index_flag[i] == 1):
+                    list_of_possible_moves.append(index_array[i])
+                    if(index_array[i] == (my_index[1], my_index[0])): #is the requested move one of the valid moves?
+                        #and which move type?
+                        if(i<2):
+                            result = "move"
+                        if(i==2): #leftmost to center
+                            num1 = my_index[0]+1
+                            num2 = my_index[1]+1
+                            result = ("hop",(num1, num2)) #values which are index of piece to remove
+                        if(i==3): #rightmost to center
+                            num3 = my_index[0]+1
+                            num4 = my_index[1]-1
+                            result = ("hop",(num3, num4))                        
+            #print("my_index[0], my_index[1]: ", my_index[0], my_index[1])
+            #print("index_array: ", index_array)
+            #print("We made it to the end of check_valid_move()! ")
+            #print("result is: ", result)
+        elif(piece_type == "blackking"): #king piece
+            index_array = []
+            index_flag = []
+            #  x    x
+            #   x  x
+            #    ||
+            #   x  x
+            #  x    x
+            index0 = (my_old_index[1]-1, my_old_index[0]-1) #four possible moves for piece
+            index1 = (my_old_index[1]+1, my_old_index[0]-1)
+            index2 = (my_old_index[1]-2, my_old_index[0]-2)
+            index3 = (my_old_index[1]+2, my_old_index[0]-2)
+            index4 = (my_old_index[1]-1, my_old_index[0]+1)
+            index5 = (my_old_index[1]+1, my_old_index[0]+1)
+            index6 = (my_old_index[1]-2, my_old_index[0]+2)
+            index7 = (my_old_index[1]+2, my_old_index[0]+2) 
+            index_array.append(index0)
+            index_array.append(index1)
+            index_array.append(index2)
+            index_array.append(index3)
+            index_array.append(index4)
+            index_array.append(index5)
+            index_array.append(index6)
+            index_array.append(index7)
+            for i in range(0,7):
+                #set to be true until proven otherwise
+                index_flag.append(1) #respective index corresponds to valid more or not
+            for i in range(0,7):
+                if(i==0):                    #upward, left side is ally piece
+                    print("we are at i==0")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        if((self.return_piece_type(index_array[i]) == "blackpiece") or (self.return_piece_type(index_array[i]) == "blackking")):
+                            index_flag[i] = 0
+                            index_flag[i+2] = 0
+                    #left side is completely blocked
+                    if(self.check_if_vacant(index_array[i]) == 0 and self.check_if_vacant(index_array[i+2]) == 0):
+                        index_flag[i] = 0
+                        index_flag[i+2] = 0
+                    #print("index_flag is: ", index_flag)
+                if(i==1):                    #upward, right side is ally piece
+                    print("we are at i==1")
+                    #right side is ally piece
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        #print("index_array[i] is: ", index_array[i])
+                        if((self.return_piece_type(index_array[i]) == "blackpiece") or (self.return_piece_type(index_array[i]) == "blackking")):
+                            #print("We get here xxxxxxxxxxxxx") #this branch is problem, why????
+                            index_flag[i] = 0
+                            index_flag[i+2] = 0
+                    #right side is completely blocked                        
+                    if(self.check_if_vacant(index_array[i]) == 0 and self.check_if_vacant(index_array[i+2]) == 0):
+                        #print("We get here yyyyyyyyyyyyyy")
+                        index_flag[i] = 0
+                        index_flag[i+2] = 0  
+                    #print("index_flag is: ", index_flag)                    
+                if(i==2):                    #upward, left most side is not vacant
+                    print("we are at i==2")     
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0
+                    #print("index_flag is: ", index_flag)
+                if(i==3):                    #upward, right most side is not vacant
+                    print("we are at i==3")    
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0                    
+                    #print("index_flag is: ", index_flag)                    
+                if(i==4):                    #downward, left side is ally piece
+                    print("we are at i==4")     
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        if((self.return_piece_type(index_array[i]) == "blackpiece") or (self.return_piece_type(index_array[i]) == "blackking")):
+                            index_flag[i] = 0
+                            index_flag[i+2] = 0
+                    #left side is completely blocked
+                    if(self.check_if_vacant(index_array[i]) == 0 and self.check_if_vacant(index_array[i+2]) == 0):
+                        index_flag[i] = 0
+                        index_flag[i+2] = 0
+                    #print("index_flag is: ", index_flag)
+                if(i==5):                    #downward, right side is ally piece
+                    print("we are at i==5")
+                    #right side is ally piece
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        #print("index_array[i] is: ", index_array[i])
+                        if((self.return_piece_type(index_array[i]) == "blackpiece") or (self.return_piece_type(index_array[i]) == "blackking")):
+                            #print("We get here xxxxxxxxxxxxx") #this branch is problem, why????
+                            index_flag[i] = 0
+                            index_flag[i+2] = 0
+                    #right side is completely blocked                        
+                    if(self.check_if_vacant(index_array[i]) == 0 and self.check_if_vacant(index_array[i+2]) == 0):
+                        #print("We get here yyyyyyyyyyyyyy")
+                        index_flag[i] = 0
+                        index_flag[i+2] = 0  
+                    #print("index_flag is: ", index_flag)                     
+                if(i==6):                    #downward, left most side is not vacant
+                    print("we are at i==6")     
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0
+                    #print("index_flag is: ", index_flag)
+                if(i==7):                    #downward, right most side is not vacant
+                    print("we are at i==7")   
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0                    
+                    #print("index_flag is: ", index_flag)   
+
+            for i in range(0,8): #check all valid moves        
+                if(index_flag[i] == 1):
+                    list_of_possible_moves.append(index_array[i])
+                    if(index_array[i] == (my_index[1], my_index[0])): #is the requested move one of the valid moves?
+                        #and which move type?
+                        if(i==0 or i==1):
+                            result = "move"
+                        if(i==2): #leftmost to center
+                            num1 = my_index[0]+1
+                            num2 = my_index[1]+1
+                            result = ("hop",(num1, num2)) #values which are index of piece to remove
+                        if(i==3): #rightmost to center
+                            num1 = my_index[0]+1
+                            num2 = my_index[1]-1
+                            result = ("hop",(num1, num2))
+                        if(i==4 or i == 5):
+                            result = "move"
+                        if(i==6):
+                            num1 = my_index[0]-1
+                            num2 = my_index[1]+1
+                            result = ("hop",(num1, num2)) #values which are index of piece to remove
+                        if(i==7):
+                            num1 = my_index[0]-1
+                            num2 = my_index[1]-1
+                            result = ("hop",(num1, num2))    
+        return result
+    
+    def has_valid_hops_left(self, name, my_index, prev_move_type):
+        #checks from the current location of the piece whether it has any valid hops left
+        #returns a boolean 0 or 1
+        result = 0
+        piece_type = self.return_piece_type(my_index)
+        if(piece_type == "blackpiece"): #regular piece
+            index_array = []
+            index_flag = []
+            #  H    H
+            #   x  x
+            #    ||
+            #print("x coord        , y_coord        : ")
+            #print("my_index[1], my_index[0]: ", my_index[1], my_index[0])
+            index0 = (my_index[1]-1, my_index[0]-1) #four possible moves for piece
+            index1 = (my_index[1]+1, my_index[0]-1) #note [1] is col or x coord, note [0] is row or y coord
+            index2 = (my_index[1]-2, my_index[0]-2) #hop #1
+            index3 = (my_index[1]+2, my_index[0]-2) #hop #2
+            index_array.append(index0)
+            index_array.append(index1)
+            index_array.append(index2)
+            index_array.append(index3)
+            #print("index_array is: ", index_array)
+            for i in range(0,4):
+                #set to be true until proven otherwise
+                index_flag.append(1) #respective index corresponds to valid more or not            
+
+            for i in range(0,4): #determine all the illegal moves here
+                #index out of bound
+                if(index_array[i][0]<0 or index_array[i][0]>7 or index_array[i][1]<0 or index_array[i][1]>7):
+                    index_flag[i] = 0
+                
+                if(i==0):                    #left side is ally piece
+                    index_flag[i] = 0
+                if(i==1):
+                    index_flag[i] = 0
+                if(i==2):
+                    #print("we are at i==2")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0
+                    #print("index_flag is: ", index_flag)
+                #right most side is not vacant
+                if(i==3):
+                    #print("we are at i==3")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0                    
+                    #print("index_flag is: ", index_flag)
+                    
+            #print("index_flag is: ", index_flag)
+            #print("Expected index_flag is:  [1, 1, 0, 0]")
+            for i in range(0,4): #check all valid moves        
+                result = result + index_flag[i]                    
+            #print("my_index[0], my_index[1]: ", my_index[0], my_index[1])
+            #print("index_array: ", index_array)
+            #print("We made it to the end of has_valid_hops_left()! ")
+            if(prev_move_type == "move"):
+                result = 0
+            print("result is: ", result)
+
+        elif(piece_type == "blackking"): #king piece
+            index_array = []
+            index_flag = []
+            #  x    x
+            #   x  x
+            #    ||
+            #   x  x
+            #  x    x
+            index0 = (my_old_index[1]-1, my_old_index[0]-1) #four possible moves for piece
+            index1 = (my_old_index[1]+1, my_old_index[0]-1)
+            index2 = (my_old_index[1]-2, my_old_index[0]-2)
+            index3 = (my_old_index[1]+2, my_old_index[0]-2)
+            index4 = (my_old_index[1]-1, my_old_index[0]+1)
+            index5 = (my_old_index[1]+1, my_old_index[0]+1)
+            index6 = (my_old_index[1]-2, my_old_index[0]+2)
+            index7 = (my_old_index[1]+2, my_old_index[0]+2) 
+            index_array.append(index0)
+            index_array.append(index1)
+            index_array.append(index2)
+            index_array.append(index3)
+            index_array.append(index4)
+            index_array.append(index5)
+            index_array.append(index6)
+            index_array.append(index7)
             
+            for i in range(0,7):
+                #set to be true until proven otherwise
+                index_flag.append(1) #respective index corresponds to valid more or not            
+
+            for i in range(0,7): #determine all the illegal moves here
+                #index out of bound
+                # if(index_array[i][0]<0 or index_array[i][0]>7 or index_array[i][1]<0 or index_array[i][1]>7):
+                    # index_flag[i] = 0
+                
+                if(i==0):                    #left side is ally piece
+                    index_flag[i] = 0
+                if(i==1):
+                    index_flag[i] = 0
+                if(i==2):   #upward, left most side is not vacant
+                    #print("we are at i==2")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0
+                    #print("index_flag is: ", index_flag)
+                #right most side is not vacant
+                if(i==3):   #upward, right most side is not vacant
+                    #print("we are at i==3")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0                    
+                    #print("index_flag is: ", index_flag)
+                if(i==4):
+                    index_flag[i] = 0
+                if(i==5):
+                    index_flag[i] = 0
+                if(i==6):   #downward, left most side is not vacant
+                    #print("we are at i==6")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0
+                    #print("index_flag is: ", index_flag)                
+                if(i==7):
+                    #print("we are at i==7")
+                    if(self.check_if_vacant(index_array[i]) == 0):
+                        index_flag[i] = 0
+                    if(self.check_if_vacant(index_array[i-2]) == 1): #if preceding space is empty can't hop to this
+                        index_flag[i] = 0                    
+                    #print("index_flag is: ", index_flag)
+                    
+            #print("index_flag is: ", index_flag)
+            #print("Expected index_flag is:  [1, 1, 0, 0]")
+            for i in range(0,7): #check all valid moves        
+                result = result + index_flag[i]                    
+            #print("my_index[0], my_index[1]: ", my_index[0], my_index[1])
+            #print("index_array: ", index_array)
+            #print("We made it to the end of has_valid_hops_left()! ")            
+            if(prev_move_type == "move"):
+                result = 0            
+        return result
+        
+        
+    def return_piece_name(self, my_index):
+        #print("return_piece_name")
+        #print("my_index is: ", my_index)
+        result = "" #no piece exists
+        #print("my_index[0], my_index[1]", my_index[0], my_index[1])
+        for my_piece_O in range(len(Client.coordArrayO)):
+            if((my_index[0]) == Client.coordArrayO[my_piece_O][1]):
+                if(my_index[1] == Client.coordArrayO[my_piece_O][2]):
+                    result = Client.coordArrayO[my_piece_O][0]    #returns piece# like piece15
+                    #print("result is:", result)
+                    break
+        for my_piece_X in range(len(Client.coordArrayX)):
+            if((my_index[0]) == Client.coordArrayX[my_piece_X][1]):
+                if(my_index[1] == Client.coordArrayX[my_piece_X][2]):
+                    result = Client.coordArrayX[my_piece_X][0]    #returns piece# like piece4
+                    #print("result is:", result)
+                    break
+        return result
+                    
+    def return_piece_type(self, my_index):
+        #print("return_piece_type")
+        #print("my_index is: ", my_index)
+        name = self.return_piece_name(my_index)
+        temp = self.canvas.gettags(name)
+        
+        #print("temp is: ", temp)
+        #print("temp[1] is: ", temp[1])
+        result = "" #no piece exists
+        if(len(temp)==2):
+            if(temp[1] == "blackpiecetag"):
+                result = "blackpiece"
+            if(temp[1] == "redpiecetag"):
+                result = "redpiece"
+            if(temp[1] == "blackkingtag"):
+                result = "blackking"
+            if(temp[1] == "redkingtag"):
+                result = "redking"
+        
+        return result        
+        
+    def check_if_vacant(self, my_index):
+        vacant_flag = 1
+        #my_index[1] my_index[0] is row col
+        #print("my_index: ", my_index)
+        for my_piece_O in range(len(Client.coordArrayO)):
+            #print(Client.coordArrayO[my_piece_O][1], Client.coordArrayO[my_piece_O][2])
+            if(my_index[1] == Client.coordArrayO[my_piece_O][1]):
+                if(my_index[0] == Client.coordArrayO[my_piece_O][2]):
+                    vacant_flag = 0
+                    return vacant_flag
+                    
+        for my_piece_X in range(len(Client.coordArrayX)):
+            #print(Client.coordArrayX[my_piece_X][1], Client.coordArrayX[my_piece_X][2])
+            if(my_index[1] == Client.coordArrayX[my_piece_X][1]):
+                if(my_index[0] == Client.coordArrayX[my_piece_X][2]):
+                    vacant_flag = 0
+                    return vacant_flag    
+        return vacant_flag
+        
     def game_on(self):
         self.click_counter = 0
         self.old_x_coord = 0
@@ -1257,12 +2179,27 @@ class Client_Gui:
                 print("Printing my message", self.server_new_piece_coord)
                 print("Printing my message", self.server_removed_pieces)
                 self.movepiece(self.server_moved_piece, 7 - self.server_new_piece_coord[0], 7 - self.server_new_piece_coord[1])
+                # self.canvas.delete("piece10")
+                # self.removepiece("piece10")
                 if(len(self.server_removed_pieces)>0):
-                    for i in range(len(self.server_removed_pieces)):
-                        self.removepiece(self.server_removed_pieces[i])                
-                self.GUI_Label2.config(text=self.server_moved_piece)
-                self.GUI_Label2.config(text=msg)
-            except recv_queue.Empty:
+                    for piece_name in self.server_removed_pieces:
+                        self.removepiece(piece_name)
+                if(self.server_new_piece_coord[0] == 0):
+                    myTags = self.canvas.gettags(self.server_moved_piece)
+                    self.removepiece(self.server_moved_piece)                    
+                    print("Time to make a king piece!!!")                    
+                    redking = tk.PhotoImage(file="redking.gif")
+                    col = 7 - self.server_new_piece_coord[1]
+                    row = 7 - self.server_new_piece_coord[0]
+                    xCoord = (col * self.size) + int(self.size/2)
+                    yCoord = (row * self.size) + int(self.size/2)
+                    self.canvas.create_image(xCoord,yCoord,image=redking, tags=(self.server_moved_piece, "redkingtag"),anchor="c")                    
+                    self.placepiece(redking, 0, 0)
+                print("Client.coordArrayX is: ", Client.coordArrayX)
+                print("Client.coordArrayO is: ", Client.coordArrayO)
+                self.GUI_Label2.config(text="Turn Counter: " + str(Client.turn_count))
+                print("Exitted processIncoming()")
+            except:
                 # just on general principles, although we don't
                 # expect this branch to be taken in this case
                 pass
@@ -1286,6 +2223,7 @@ class Client:
         Client.numCaptured = 0
         Client.numRemaining = 12
         Client.turn_count = 1
+        Client.pieces_to_remove = []
         self.init_board()
         self.setup_Gui()
 
